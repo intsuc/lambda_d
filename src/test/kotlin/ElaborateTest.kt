@@ -1,3 +1,4 @@
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import Core as C
@@ -26,5 +27,25 @@ object ElaborateTest {
       result.type,
       V.Type,
     )
+  }
+
+  @Test
+  fun illTypedFuncOf() {
+    assertThrows<IllegalStateException> {
+      emptyCtx().elaborate(
+        λ("x", !"x") of S.Type,
+        null,
+      )
+    }
+  }
+
+  @Test
+  fun illTypedApp() {
+    assertThrows<IllegalStateException> {
+      emptyCtx().elaborate(
+        S.Type(S.Type),
+        null,
+      )
+    }
   }
 }

@@ -1,6 +1,8 @@
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.plus
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 
 data class Entry(
   val name: String,
@@ -41,33 +43,66 @@ data class Result(
   val type: Value,
 )
 
+@OptIn(ExperimentalContracts::class)
+inline fun synth(expected: Value?): Boolean {
+  contract {
+    returns(true) implies (expected == null)
+  }
+  return expected == null
+}
+
+@OptIn(ExperimentalContracts::class)
+inline fun <reified V : Value> check(expected: Value?): Boolean {
+  contract {
+    returns(true) implies (expected is V)
+  }
+  return expected is V
+}
+
+@OptIn(ExperimentalContracts::class)
+inline fun <reified V : Value> match(expected: Value?): Boolean {
+  contract {
+    returns(true) implies (expected is V?)
+  }
+  return expected is V?
+}
+
 fun Ctx.elaborate(
   surface: Surface,
   expected: Value?,
 ): Result {
   return when {
     surface is Surface.Type &&
-    expected == null          -> Result(Core.Type, Value.Type)
+    synth(expected)             -> {
+      Result(Core.Type, Value.Type)
+    }
 
     surface is Surface.Func &&
-    expected == null          -> {
+    synth(expected)             -> {
       val param = elaborate(surface.param, Value.Type)
       val result = extend(surface.name, env.eval(param.core), freshVar()).elaborate(surface.result, Value.Type)
       Result(Core.Func(param.core, result.core), Value.Type)
     }
 
-    surface is Surface.FuncOf -> when (expected) {
-      is Value.Func -> {
-        val freshVar = freshVar()
-        val body = extend(surface.name, expected.param.value, freshVar).elaborate(surface.body, expected.result(freshVar))
-        Result(Core.FuncOf(body.core), expected)
-      }
-      null          -> error("failed to synthesize: $surface")
-      else          -> error("expected: func, actual: $expected")
+    surface is Surface.FuncOf &&
+    synth(expected)             -> {
+      error("failed to synthesize: $surface")
+    }
+
+    surface is Surface.FuncOf &&
+    check<Value.Func>(expected) -> {
+      val freshVar = freshVar()
+      val body = extend(surface.name, expected.param.value, freshVar).elaborate(surface.body, expected.result(freshVar))
+      Result(Core.FuncOf(body.core), expected)
+    }
+
+    surface is Surface.FuncOf &&
+    check<Value>(expected)      -> {
+      error("expected: func, actual: $expected")
     }
 
     surface is Surface.App &&
-    expected == null          -> {
+    synth(expected)             -> {
       val func = elaborate(surface.func, null)
       when (val funcType = func.type) {
         is Value.Func -> {
@@ -78,25 +113,27 @@ fun Ctx.elaborate(
       }
     }
 
-    surface is Surface.Let    -> {
+    surface is Surface.Let &&
+    match<Value>(expected)      -> {
       val init = elaborate(surface.init, null)
       val body = extend(surface.name, init.type, lazy { env.eval(init.core) }).elaborate(surface.body, expected)
       Result(Core.Let(init.core, body.core), expected ?: body.type)
     }
 
     surface is Surface.Var &&
-    expected == null          -> when (val level = types.indexOfLast { (name, _) -> name == surface.name }) {
+    synth(expected)             -> when (val level = types.indexOfLast { (name, _) -> name == surface.name }) {
       -1   -> error("var not found: ${surface.name}")
       else -> Result(Core.Var(Lvl(level)), types[level].type)
     }
 
     surface is Surface.Anno &&
-    expected == null          -> {
+    synth(expected)             -> {
       val type = elaborate(surface.type, Value.Type)
       elaborate(surface.term, env.eval(type.core))
     }
 
-    expected != null          -> {
+    surface is Surface &&
+    check<Value>(expected)      -> {
       val actual = elaborate(surface, null)
       if (top.conv(expected, actual.type)) {
         actual
@@ -105,6 +142,6 @@ fun Ctx.elaborate(
       }
     }
 
-    else                      -> error("unreachable")
+    else                        -> error("unreachable")
   }
 }
