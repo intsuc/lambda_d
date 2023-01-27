@@ -27,13 +27,6 @@ fun Env.eval(
   }
 }
 
-@JvmInline
-value class Lvl(val value: Int) {
-  fun suc(): Lvl {
-    return Lvl(value + 1)
-  }
-}
-
 fun Lvl.conv(
   value1: Value,
   value2: Value,
