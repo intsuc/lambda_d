@@ -20,7 +20,7 @@ fun emptyCtx(): Ctx {
 
 val Ctx.top: Lvl
   get() {
-    return Lvl(types.size)
+    return types.size.lvl
   }
 
 fun Ctx.freshVar(): Lazy<Value> {
@@ -123,7 +123,7 @@ fun Ctx.elaborate(
     surface is Surface.Var &&
     synth(expected)             -> when (val level = types.indexOfLast { (name, _) -> name == surface.name }) {
       -1   -> error("var not found: ${surface.name}")
-      else -> Result(Core.Var(Lvl(level)), types[level].type)
+      else -> Result(Core.Var(level.lvl), types[level].type)
     }
 
     surface is Surface.Anno &&

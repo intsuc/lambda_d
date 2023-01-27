@@ -57,4 +57,4 @@ inline fun let(
   C.Let(init, body)
 
 inline operator fun Int.not(): C =
-  C.Var(Lvl(this))
+  C.Var(lvl)
