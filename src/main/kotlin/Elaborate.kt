@@ -18,13 +18,13 @@ fun emptyCtx(): Ctx {
   return Ctx(persistentListOf(), persistentListOf())
 }
 
-val Ctx.top: Lvl
+val Ctx.next: Lvl
   get() {
     return types.size.lvl
   }
 
-fun Ctx.freshVar(): Lazy<Value> {
-  return lazyOf(Value.Var(top))
+fun Ctx.nextVar(): Lazy<Value> {
+  return lazyOf(Value.Var(next))
 }
 
 fun Ctx.extend(
@@ -80,7 +80,7 @@ fun Ctx.elaborate(
     surface is Surface.Func &&
     synth(expected)             -> {
       val param = elaborate(surface.param, Value.Type)
-      val result = extend(surface.name, env.eval(param.core), freshVar()).elaborate(surface.result, Value.Type)
+      val result = extend(surface.name, env.eval(param.core), nextVar()).elaborate(surface.result, Value.Type)
       Result(Core.Func(param.core, result.core), Value.Type)
     }
 
@@ -91,8 +91,8 @@ fun Ctx.elaborate(
 
     surface is Surface.FuncOf &&
     check<Value.Func>(expected) -> {
-      val freshVar = freshVar()
-      val body = extend(surface.name, expected.param.value, freshVar).elaborate(surface.body, expected.result(freshVar))
+      val next = nextVar()
+      val body = extend(surface.name, expected.param.value, next).elaborate(surface.body, expected.result(next))
       Result(Core.FuncOf(body.core), expected)
     }
 
@@ -135,7 +135,7 @@ fun Ctx.elaborate(
     surface is Surface &&
     check<Value>(expected)      -> {
       val actual = elaborate(surface, null)
-      if (top.conv(expected, actual.type)) {
+      if (next.conv(expected, actual.type)) {
         actual
       } else {
         error("expected: $expected, actual: ${actual.type}")
