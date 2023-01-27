@@ -9,13 +9,23 @@ fun Env.eval(
   return when (core) {
     is Core.Type   -> Value.Type
 
-    is Core.Func   -> Value.Func(lazy { eval(core.param) }) { (this + it).eval(core.result) }
+    is Core.Func   -> {
+      val param = lazy { eval(core.param) }
+      val result = { arg: Lazy<Value> -> (this + arg).eval(core.result) }
+      Value.Func(param, result)
+    }
 
-    is Core.FuncOf -> Value.FuncOf { (this + it).eval(core.body) }
+    is Core.FuncOf -> {
+      val body = { arg: Lazy<Value> -> (this + arg).eval(core.body) }
+      Value.FuncOf(body)
+    }
 
-    is Core.App    -> when (val func = eval(core.func)) {
-      is Value.FuncOf -> func.body(lazy { eval(core.arg) })
-      else            -> Value.App(func, lazy { eval(core.arg) })
+    is Core.App    -> {
+      val arg = lazy { eval(core.arg) }
+      when (val func = eval(core.func)) {
+        is Value.FuncOf -> func.body(arg)
+        else            -> Value.App(func, arg)
+      }
     }
 
     is Core.Let    -> {
