@@ -14,20 +14,20 @@ data class Ctx(
   val env: Env,
 )
 
-fun emptyCtx(): Ctx {
+inline fun emptyCtx(): Ctx {
   return Ctx(persistentListOf(), persistentListOf())
 }
 
-val Ctx.next: Lvl
+inline val Ctx.next: Lvl
   get() {
     return types.size.lvl
   }
 
-fun Ctx.nextVar(): Lazy<Value> {
+inline fun Ctx.nextVar(): Lazy<Value> {
   return lazyOf(Value.Var(next))
 }
 
-fun Ctx.extend(
+inline fun Ctx.extend(
   name: String,
   type: Value,
   value: Lazy<Value>,
@@ -42,6 +42,10 @@ data class Result(
   val core: Core,
   val type: Value,
 )
+
+inline infix fun Core.of(type: Value): Result {
+  return Result(this, type)
+}
 
 @OptIn(ExperimentalContracts::class)
 inline fun synth(expected: Value?): Boolean {
@@ -69,79 +73,79 @@ inline fun <reified V : Value> match(expected: Value?): Boolean {
 
 fun Ctx.elaborate(
   surface: Surface,
-  expected: Value?,
+  type: Value?,
 ): Result {
   return when {
     surface is Surface.Type &&
-    synth(expected)             -> {
-      Result(Core.Type, Value.Type)
+    synth(type)             -> {
+      Core.Type of Value.Type
     }
 
     surface is Surface.Func &&
-    synth(expected)             -> {
+    synth(type)             -> {
       val param = elaborate(surface.param, Value.Type)
       val result = extend(surface.name, env.eval(param.core), nextVar()).elaborate(surface.result, Value.Type)
-      Result(Core.Func(param.core, result.core), Value.Type)
+      Core.Func(param.core, result.core) of Value.Type
     }
 
     surface is Surface.FuncOf &&
-    synth(expected)             -> {
+    synth(type)             -> {
       error("failed to synthesize: $surface")
     }
 
     surface is Surface.FuncOf &&
-    check<Value.Func>(expected) -> {
+    check<Value.Func>(type) -> {
       val next = nextVar()
-      val body = extend(surface.name, expected.param.value, next).elaborate(surface.body, expected.result(next))
-      Result(Core.FuncOf(body.core), expected)
+      val body = extend(surface.name, type.param.value, next).elaborate(surface.body, type.result(next))
+      Core.FuncOf(body.core) of type
     }
 
     surface is Surface.FuncOf &&
-    check<Value>(expected)      -> {
-      error("expected: func, actual: $expected")
+    check<Value>(type)      -> {
+      error("expected: func, actual: $type")
     }
 
     surface is Surface.App &&
-    synth(expected)             -> {
+    synth(type)             -> {
       val func = elaborate(surface.func, null)
       when (val funcType = func.type) {
         is Value.Func -> {
           val arg = elaborate(surface.arg, funcType.param.value)
-          Result(Core.App(func.core, arg.core), funcType.result(lazy { env.eval(arg.core) }))
+          Core.App(func.core, arg.core) of funcType.result(lazy { env.eval(arg.core) })
         }
         else          -> error("expected: func, actual: $funcType")
       }
     }
 
     surface is Surface.Let &&
-    match<Value>(expected)      -> {
+    match<Value>(type)      -> {
       val init = elaborate(surface.init, null)
-      val body = extend(surface.name, init.type, lazy { env.eval(init.core) }).elaborate(surface.body, expected)
-      Result(Core.Let(init.core, body.core), expected ?: body.type)
+      val body = extend(surface.name, init.type, lazy { env.eval(init.core) }).elaborate(surface.body, type)
+      Core.Let(init.core, body.core) of (type ?: body.type)
     }
 
     surface is Surface.Var &&
-    synth(expected)             -> when (val level = types.indexOfLast { (name, _) -> name == surface.name }) {
+    synth(type)             -> when (val level = types.indexOfLast { (name, _) -> name == surface.name }) {
       -1   -> error("var not found: ${surface.name}")
-      else -> Result(Core.Var(level.lvl), types[level].type)
+      else -> Core.Var(level.lvl) of types[level].type
     }
 
     surface is Surface.Anno &&
-    synth(expected)             -> {
+    synth(type)             -> {
       val type = elaborate(surface.type, Value.Type)
       elaborate(surface.term, env.eval(type.core))
     }
 
     surface is Surface &&
-    check<Value>(expected)      -> {
+    check<Value>(type)      -> {
       val actual = elaborate(surface, null)
-      if (next.conv(expected, actual.type)) {
+      if (next.conv(type, actual.type)) {
         actual
       } else {
-        error("expected: $expected, actual: ${actual.type}")
+        error("expected: $type, actual: ${actual.type}")
       }
     }
 
-    else                        -> error("unreachable")
+    else                    -> error("unreachable")
   }
 }
