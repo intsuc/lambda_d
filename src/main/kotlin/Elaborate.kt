@@ -146,6 +146,8 @@ fun Ctx.elaborate(
       }
     }
 
-    else                    -> error("unreachable")
+    else                    -> {
+      error("unreachable")
+    }
   }
 }
