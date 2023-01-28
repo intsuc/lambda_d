@@ -48,27 +48,27 @@ inline infix fun Core.of(type: Value): Result {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun synth(expected: Value?): Boolean {
+inline fun synth(type: Value?): Boolean {
   contract {
-    returns(true) implies (expected == null)
+    returns(true) implies (type == null)
   }
-  return expected == null
+  return type == null
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun <reified V : Value> check(expected: Value?): Boolean {
+inline fun <reified V : Value> check(type: Value?): Boolean {
   contract {
-    returns(true) implies (expected is V)
+    returns(true) implies (type is V)
   }
-  return expected is V
+  return type is V
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun <reified V : Value> match(expected: Value?): Boolean {
+inline fun <reified V : Value> match(type: Value?): Boolean {
   contract {
-    returns(true) implies (expected is V?)
+    returns(true) implies (type is V?)
   }
-  return expected is V?
+  return type is V?
 }
 
 fun Ctx.elaborate(
