@@ -7,7 +7,9 @@ fun Env.eval(
   core: Core,
 ): Value {
   return when (core) {
-    is Core.Type   -> Value.Type
+    is Core.Type   -> {
+      Value.Type
+    }
 
     is Core.Func   -> {
       val param = lazy { eval(core.param) }
@@ -33,7 +35,9 @@ fun Env.eval(
       (this + init).eval(core.body)
     }
 
-    is Core.Var    -> this[core.level.value].value
+    is Core.Var    -> {
+      this[core.level.value].value
+    }
   }
 }
 
@@ -42,25 +46,30 @@ fun Lvl.conv(
   value2: Value,
 ): Boolean {
   return when (value1) {
-    is Value.Type   ->
+    is Value.Type   -> {
       value2 is Value.Type
+    }
 
-    is Value.Func   ->
+    is Value.Func   -> {
       value2 is Value.Func &&
       conv(value1.param.value, value2.param.value) &&
       lazyOf(Value.Var(this)).let { suc().conv(value1.result(it), value2.result(it)) }
+    }
 
-    is Value.FuncOf ->
+    is Value.FuncOf -> {
       value2 is Value.FuncOf &&
       lazyOf(Value.Var(this)).let { suc().conv(value1.body(it), value2.body(it)) }
+    }
 
-    is Value.App    ->
+    is Value.App    -> {
       value2 is Value.App &&
       conv(value1.func, value2.func) &&
       conv(value1.arg.value, value2.arg.value)
+    }
 
-    is Value.Var    ->
+    is Value.Var    -> {
       value2 is Value.Var &&
       value1.level == value2.level
+    }
   }
 }
