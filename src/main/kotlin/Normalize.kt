@@ -33,7 +33,7 @@ fun Env.eval(
     }
 
     is Core.Var    -> {
-      this[core.level.value].value
+      this[core.level].value
     }
   }
 }
@@ -42,7 +42,7 @@ operator fun Closure.invoke(arg: Lazy<Value>): Value {
   return (env + arg).eval(body)
 }
 
-fun Lvl.conv(
+fun Int.conv(
   value1: Value,
   value2: Value,
 ): Boolean {
@@ -54,12 +54,12 @@ fun Lvl.conv(
     is Value.Func   -> {
       value2 is Value.Func &&
       conv(value1.param.value, value2.param.value) &&
-      lazyOf(Value.Var(this)).let { suc().conv(value1.result(it), value2.result(it)) }
+      lazyOf(Value.Var(this)).let { (this + 1).conv(value1.result(it), value2.result(it)) }
     }
 
     is Value.FuncOf -> {
       value2 is Value.FuncOf &&
-      lazyOf(Value.Var(this)).let { suc().conv(value1.body(it), value2.body(it)) }
+      lazyOf(Value.Var(this)).let { (this + 1).conv(value1.body(it), value2.body(it)) }
     }
 
     is Value.App    -> {

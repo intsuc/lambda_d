@@ -21,6 +21,6 @@ sealed interface Core {
   ) : Core
 
   data class Var(
-    val level: Lvl,
+    val level: Int,
   ) : Core
 }

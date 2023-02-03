@@ -18,7 +18,7 @@ sealed interface Value {
   ) : Value
 
   data class Var(
-    val level: Lvl,
+    val level: Int,
   ) : Value
 }
 

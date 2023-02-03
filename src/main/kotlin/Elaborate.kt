@@ -18,9 +18,9 @@ inline fun emptyCtx(): Ctx {
   return Ctx(persistentListOf(), persistentListOf())
 }
 
-inline val Ctx.next: Lvl
+inline val Ctx.next: Int
   get() {
-    return types.size.lvl
+    return types.size
   }
 
 inline fun Ctx.nextVar(): Lazy<Value> {
@@ -127,7 +127,7 @@ fun Ctx.elaborate(
     surface is Surface.Var &&
     synth(type)             -> when (val level = types.indexOfLast { (name, _) -> name == surface.name }) {
       -1   -> error("var not found: ${surface.name}")
-      else -> Core.Var(level.lvl) of types[level].type
+      else -> Core.Var(level) of types[level].type
     }
 
     surface is Surface.Anno &&
