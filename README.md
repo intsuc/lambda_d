@@ -1,8 +1,8 @@
-# elaboration-kt
+# $\lambda_d$
 
 [![test](https://github.com/intsuc/elaboration-kt/actions/workflows/test.yml/badge.svg)](https://github.com/intsuc/elaboration-kt/actions/workflows/test.yml)
 
-A simple implementation of a dependently typed language in Kotlin
+An implementation of a simple dependently typed language $\lambda_d$ in Kotlin
 
 ## References
 
