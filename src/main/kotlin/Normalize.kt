@@ -1,7 +1,4 @@
-import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.plus
-
-typealias Env = PersistentList<Lazy<Value>>
 
 fun Env.eval(
   core: Core,
@@ -13,12 +10,12 @@ fun Env.eval(
 
     is Core.Func   -> {
       val param = lazy { eval(core.param) }
-      val result = { arg: Lazy<Value> -> (this + arg).eval(core.result) }
+      val result = Closure(this, core.result)
       Value.Func(param, result)
     }
 
     is Core.FuncOf -> {
-      val body = { arg: Lazy<Value> -> (this + arg).eval(core.body) }
+      val body = Closure(this, core.body)
       Value.FuncOf(body)
     }
 
@@ -39,6 +36,10 @@ fun Env.eval(
       this[core.level.value].value
     }
   }
+}
+
+operator fun Closure.invoke(arg: Lazy<Value>): Value {
+  return (env + arg).eval(body)
 }
 
 fun Lvl.conv(

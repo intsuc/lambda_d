@@ -1,13 +1,15 @@
+import kotlinx.collections.immutable.PersistentList
+
 sealed interface Value {
   object Type : Value
 
   class Func(
     val param: Lazy<Value>,
-    val result: (Lazy<Value>) -> Value,
+    val result: Closure,
   ) : Value
 
   data class FuncOf(
-    val body: (Lazy<Value>) -> Value,
+    val body: Closure,
   ) : Value
 
   data class App(
@@ -19,3 +21,10 @@ sealed interface Value {
     val level: Lvl,
   ) : Value
 }
+
+typealias Env = PersistentList<Lazy<Value>>
+
+data class Closure(
+  val env: Env,
+  val body: Core,
+)
