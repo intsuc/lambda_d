@@ -1,1 +1,1 @@
-rootProject.name = "elaboration-kt"
+rootProject.name = "lambda_d"
