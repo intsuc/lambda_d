@@ -2,11 +2,14 @@
 
 [![test](https://github.com/intsuc/elaboration-kt/actions/workflows/test.yml/badge.svg)](https://github.com/intsuc/elaboration-kt/actions/workflows/test.yml)
 
-An implementation of a dependently typed language $\lambda_d$ in Kotlin
+An experimental implementation of a dependently typed language $\lambda_d$ in Kotlin
 
 ## Features
 
-- Type in type
+- [x] Type in type
+- [x] de Bruijn indices/levels
+- [x] Type-preserving compilation
+- [ ] Patterns
 
 ## References
 

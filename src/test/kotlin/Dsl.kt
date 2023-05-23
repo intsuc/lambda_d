@@ -1,6 +1,10 @@
 import Core as C
 import Surface as S
 
+val Us: S = S.Univ
+
+val Uc: C = C.Univ
+
 fun Π(
   param: S,
   result: S,
@@ -50,8 +54,10 @@ fun let(
   return S.Let(name, init, body)
 }
 
-operator fun String.not(): S {
-  return S.Var(this)
+fun v(
+  name: String,
+): S {
+  return S.Var(name)
 }
 
 infix fun S.of(
@@ -77,21 +83,24 @@ fun Π(
 
 fun λ(
   body: C,
+  of: C,
 ): C {
-  return C.FuncOf(null, body)
+  return C.FuncOf(null, body, of)
 }
 
 fun λ(
   name: String,
   body: C,
+  of: C,
 ): C {
-  return C.FuncOf(name, body)
+  return C.FuncOf(name, body, of)
 }
 
 operator fun C.invoke(
   arg: C,
+  of: C,
 ): C {
-  return C.App(this, arg)
+  return C.App(this, arg, of)
 }
 
 fun let(
@@ -109,6 +118,9 @@ fun let(
   return C.Let(name, init, body)
 }
 
-operator fun Int.not(): C {
-  return C.Var(this)
+fun v(
+  index: Int,
+  of: C,
+): C {
+  return C.Var(Idx(index), of)
 }

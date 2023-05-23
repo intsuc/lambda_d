@@ -1,5 +1,5 @@
 sealed class Surface {
-  data object Type : Surface()
+  data object Univ : Surface()
 
   data class Func(
     val name: String?,
