@@ -36,13 +36,12 @@ object ElaborateTest {
     )
   }
 
-  @Disabled
   @Test
-  fun idDesync() {
+  fun idDesync1() {
     val result = Ctx().elaborate(
       let(
         "id",
-        λ(λ("a", v("a"))) of Π("A", TypeS, Π(v("A"), v("A"))),
+        λ(λ("a", v("a"))) of Π("A", TypeS, Π("a", v("A"), v("A"))),
         v("id")(UnitS)(unitS),
       ),
       null,
@@ -50,9 +49,9 @@ object ElaborateTest {
     assertEquals(
       run {
         val A = v(1, TypeC)
-        val AA = Π(v(0, TypeC), A)
+        val AA = Π("a", v(0, TypeC), A)
         val TAA = Π("A", TypeC, AA)
-        val UU = Π(UnitC, UnitC)
+        val UU = Π("a", UnitC, UnitC)
         let(
           "id",
           λ(λ("a", v(0, of = A), of = AA), of = TAA),
