@@ -1,5 +1,5 @@
 sealed interface Core {
-  object Type : Core
+  data object Type : Core
 
   data class Func(
     val param: Core,

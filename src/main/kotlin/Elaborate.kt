@@ -14,20 +14,20 @@ data class Ctx(
   val env: Env,
 )
 
-inline fun emptyCtx(): Ctx {
+fun emptyCtx(): Ctx {
   return Ctx(persistentListOf(), persistentListOf())
 }
 
-inline val Ctx.next: Int
+val Ctx.next: Int
   get() {
     return types.size
   }
 
-inline fun Ctx.nextVar(): Lazy<Value> {
+fun Ctx.nextVar(): Lazy<Value> {
   return lazyOf(Value.Var(next))
 }
 
-inline fun Ctx.extend(
+fun Ctx.extend(
   name: String,
   type: Value,
   value: Lazy<Value>,
@@ -43,12 +43,12 @@ data class Result(
   val type: Value,
 )
 
-inline infix fun Core.of(type: Value): Result {
+infix fun Core.of(type: Value): Result {
   return Result(this, type)
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun synth(type: Value?): Boolean {
+fun synth(type: Value?): Boolean {
   contract {
     returns(true) implies (type == null)
   }
@@ -132,11 +132,11 @@ fun Ctx.elaborate(
 
     surface is Surface.Anno &&
     synth(type)             -> {
+      @Suppress("NAME_SHADOWING")
       val type = elaborate(surface.type, Value.Type)
       elaborate(surface.term, env.eval(type.core))
     }
 
-    surface is Surface &&
     check<Value>(type)      -> {
       val actual = elaborate(surface, null)
       if (next.conv(type, actual.type)) {

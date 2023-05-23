@@ -1,5 +1,5 @@
 sealed interface Surface {
-  object Type : Surface
+  data object Type : Surface
 
   data class Func(
     val name: String,

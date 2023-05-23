@@ -1,7 +1,7 @@
 import kotlinx.collections.immutable.PersistentList
 
 sealed interface Value {
-  object Type : Value
+  data object Type : Value
 
   class Func(
     val param: Lazy<Value>,
