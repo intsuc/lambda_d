@@ -1,5 +1,5 @@
 sealed class Surface {
-  data object Univ : Surface()
+  data object Type : Surface()
 
   data class Func(
     val name: String?,
@@ -16,6 +16,10 @@ sealed class Surface {
     val func: Surface,
     val arg: Surface,
   ) : Surface()
+
+  data object Unit : Surface()
+
+  data object UnitOf : Surface()
 
   data class Let(
     val name: String?,

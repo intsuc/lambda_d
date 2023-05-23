@@ -44,17 +44,17 @@ fun Ctx.elaborate(
   type: Value?,
 ): Result {
   return when {
-    surface is Surface.Univ &&
+    surface is Surface.Type &&
     synth(type)             -> {
-      Core.Univ of Value.Univ
+      Core.Type of Value.Type
     }
 
     surface is Surface.Func &&
     synth(type)             -> {
-      val param = elaborate(surface.param, Value.Univ)
+      val param = elaborate(surface.param, Value.Type)
       val vParam = lazy { env.eval(param.core) }
-      val result = extend(surface.name, vParam, nextVar(vParam)).elaborate(surface.result, Value.Univ)
-      Core.Func(surface.name, param.core, result.core) of Value.Univ
+      val result = extend(surface.name, vParam, nextVar(vParam)).elaborate(surface.result, Value.Type)
+      Core.Func(surface.name, param.core, result.core) of Value.Type
     }
 
     surface is Surface.FuncOf &&
@@ -88,6 +88,16 @@ fun Ctx.elaborate(
       }
     }
 
+    surface is Surface.Unit &&
+    synth(type) -> {
+      Core.Unit of Value.Type
+    }
+
+    surface is Surface.UnitOf &&
+    synth(type) -> {
+      Core.UnitOf of Value.Unit
+    }
+
     surface is Surface.Let &&
     match<Value>(type)      -> {
       val init = elaborate(surface.init, null)
@@ -103,7 +113,7 @@ fun Ctx.elaborate(
 
     surface is Surface.Anno &&
     synth(type)             -> {
-      val type = elaborate(surface.type, Value.Univ)
+      val type = elaborate(surface.type, Value.Type)
       elaborate(surface.target, env.eval(type.core))
     }
 

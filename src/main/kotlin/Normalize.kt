@@ -13,8 +13,8 @@ fun Env.eval(
   core: Core,
 ): Value {
   return when (core) {
-    is Core.Univ   -> {
-      Value.Univ
+    is Core.Type -> {
+      Value.Type
     }
 
     is Core.Func   -> {
@@ -40,6 +40,14 @@ fun Env.eval(
       }
     }
 
+    is Core.Unit -> {
+      Value.Unit
+    }
+
+    is Core.UnitOf -> {
+      Value.UnitOf
+    }
+
     is Core.Let    -> {
       val init = lazy { eval(core.init) }
       (this + init).eval(core.body)
@@ -55,8 +63,8 @@ fun Lvl.quote(
   value: Value,
 ): Core {
   return when (value) {
-    is Value.Univ   -> {
-      Core.Univ
+    is Value.Type -> {
+      Core.Type
     }
 
     is Value.Func   -> {
@@ -83,6 +91,14 @@ fun Lvl.quote(
       Core.App(func, arg, type)
     }
 
+    is Value.Unit -> {
+      Core.Unit
+    }
+
+    is Value.UnitOf -> {
+      Core.UnitOf
+    }
+
     is Value.Var    -> {
       val index = value.level.toIdx(this)
       val type = quote(value.type.value)
@@ -96,8 +112,8 @@ fun Lvl.conv(
   value2: Value,
 ): Boolean {
   return when (value1) {
-    is Value.Univ   -> {
-      value2 is Value.Univ
+    is Value.Type -> {
+      value2 is Value.Type
     }
 
     is Value.Func   -> {
@@ -118,6 +134,14 @@ fun Lvl.conv(
       value2 is Value.App &&
       conv(value1.func, value2.func) &&
       conv(value1.arg.value, value2.arg.value)
+    }
+
+    is Value.Unit -> {
+      value2 is Value.Unit
+    }
+
+    is Value.UnitOf -> {
+      value2 is Value.UnitOf
     }
 
     is Value.Var    -> {

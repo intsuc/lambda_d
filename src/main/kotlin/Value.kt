@@ -3,8 +3,9 @@ import kotlinx.collections.immutable.PersistentList
 sealed class Value {
   abstract val type: Lazy<Value>
 
-  data object Univ : Value() {
-    override val type: Lazy<Value> get() = UNIV
+  data object Type : Value() {
+    val TYPE: Lazy<Value> = lazyOf(Type)
+    override val type: Lazy<Value> get() = TYPE
   }
 
   class Func(
@@ -12,7 +13,7 @@ sealed class Value {
     val param: Lazy<Value>,
     val result: Closure,
   ) : Value() {
-    override val type: Lazy<Value> get() = UNIV
+    override val type: Lazy<Value> get() = Type.TYPE
   }
 
   data class FuncOf(
@@ -27,13 +28,20 @@ sealed class Value {
     override val type: Lazy<Value>,
   ) : Value()
 
+  data object Unit : Value() {
+    val UNIT: Lazy<Value> = lazyOf(Unit)
+    override val type: Lazy<Value> get() = Type.TYPE
+  }
+
+  data object UnitOf : Value() {
+    override val type: Lazy<Value> get() = Unit.UNIT
+  }
+
   data class Var(
     val level: Lvl,
     override val type: Lazy<Value>,
   ) : Value()
 }
-
-private val UNIV: Lazy<Value> = lazyOf(Value.Univ)
 
 typealias Env = PersistentList<Lazy<Value>>
 

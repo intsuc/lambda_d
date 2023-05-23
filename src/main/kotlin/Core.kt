@@ -1,9 +1,9 @@
 sealed class Core {
   abstract val type: Core
 
-  data object Univ : Core() {
+  data object Type : Core() {
     // Type in type
-    override val type: Core get() = Univ
+    override val type: Core get() = Type
   }
 
   data class Func(
@@ -11,7 +11,7 @@ sealed class Core {
     val param: Core,
     val result: Core,
   ) : Core() {
-    override val type: Core get() = Univ
+    override val type: Core get() = Type
   }
 
   data class FuncOf(
@@ -25,6 +25,14 @@ sealed class Core {
     val arg: Core,
     override val type: Core,
   ) : Core()
+
+  data object Unit : Core() {
+    override val type: Core get() = Type
+  }
+
+  data object UnitOf : Core() {
+    override val type: Core get() = Unit
+  }
 
   data class Let(
     val name: String?,

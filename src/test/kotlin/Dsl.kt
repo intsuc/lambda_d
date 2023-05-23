@@ -1,9 +1,7 @@
 import Core as C
 import Surface as S
 
-val Us: S = S.Univ
-
-val Uc: C = C.Univ
+val TypeS: S = S.Type
 
 fun Π(
   param: S,
@@ -39,6 +37,12 @@ operator fun S.invoke(
   return S.App(this, arg)
 }
 
+@JvmField
+val UnitS: S = S.Unit
+
+@JvmField
+val unitS: S = S.UnitOf
+
 fun let(
   init: S,
   body: S,
@@ -65,6 +69,8 @@ infix fun S.of(
 ): S {
   return S.Anno(this, type)
 }
+
+val TypeC: C = C.Type
 
 fun Π(
   param: C,
@@ -102,6 +108,12 @@ operator fun C.invoke(
 ): C {
   return C.App(this, arg, of)
 }
+
+@JvmField
+val UnitC: C = C.Unit
+
+@JvmField
+val unitC: C = C.UnitOf
 
 fun let(
   init: C,
