@@ -2,11 +2,13 @@ sealed interface Core {
   data object Type : Core
 
   data class Func(
+    val name: String?,
     val param: Core,
     val result: Core,
   ) : Core
 
   data class FuncOf(
+    val name: String?,
     val body: Core,
   ) : Core
 
@@ -16,6 +18,7 @@ sealed interface Core {
   ) : Core
 
   data class Let(
+    val name: String?,
     val init: Core,
     val body: Core,
   ) : Core

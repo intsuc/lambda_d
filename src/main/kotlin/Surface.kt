@@ -2,13 +2,13 @@ sealed interface Surface {
   data object Type : Surface
 
   data class Func(
-    val name: String,
+    val name: String?,
     val param: Surface,
     val result: Surface,
   ) : Surface
 
   data class FuncOf(
-    val name: String,
+    val name: String?,
     val body: Surface,
   ) : Surface
 
@@ -18,7 +18,7 @@ sealed interface Surface {
   ) : Surface
 
   data class Let(
-    val name: String,
+    val name: String?,
     val init: Surface,
     val body: Surface,
   ) : Surface
@@ -28,7 +28,7 @@ sealed interface Surface {
   ) : Surface
 
   data class Anno(
-    val term: Surface,
+    val target: Surface,
     val type: Surface,
   ) : Surface
 }

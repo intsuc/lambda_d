@@ -28,14 +28,18 @@ fun Ctx.nextVar(): Lazy<Value> {
 }
 
 fun Ctx.extend(
-  name: String,
-  type: Value,
+  name: String?,
+  type: Lazy<Value>,
   value: Lazy<Value>,
 ): Ctx {
-  return copy(
-    types = types + Entry(name, type),
-    env = env + value,
-  )
+  return if (name == null) {
+    this
+  } else {
+    copy(
+      types = types + Entry(name, type.value),
+      env = env + value,
+    )
+  }
 }
 
 data class Result(
@@ -84,8 +88,8 @@ fun Ctx.elaborate(
     surface is Surface.Func &&
     synth(type)             -> {
       val param = elaborate(surface.param, Value.Type)
-      val result = extend(surface.name, env.eval(param.core), nextVar()).elaborate(surface.result, Value.Type)
-      Core.Func(param.core, result.core) of Value.Type
+      val result = extend(surface.name, lazy { env.eval(param.core) }, nextVar()).elaborate(surface.result, Value.Type)
+      Core.Func(surface.name, param.core, result.core) of Value.Type
     }
 
     surface is Surface.FuncOf &&
@@ -96,8 +100,8 @@ fun Ctx.elaborate(
     surface is Surface.FuncOf &&
     check<Value.Func>(type) -> {
       val next = nextVar()
-      val body = extend(surface.name, type.param.value, next).elaborate(surface.body, type.result(next))
-      Core.FuncOf(body.core) of type
+      val body = extend(surface.name, lazyOf(type.param.value), next).elaborate(surface.body, type.result(next))
+      Core.FuncOf(surface.name, body.core) of type
     }
 
     surface is Surface.FuncOf &&
@@ -120,8 +124,8 @@ fun Ctx.elaborate(
     surface is Surface.Let &&
     match<Value>(type)      -> {
       val init = elaborate(surface.init, null)
-      val body = extend(surface.name, init.type, lazy { env.eval(init.core) }).elaborate(surface.body, type)
-      Core.Let(init.core, body.core) of (type ?: body.type)
+      val body = extend(surface.name, lazyOf(init.type), lazy { env.eval(init.core) }).elaborate(surface.body, type)
+      Core.Let(surface.name, init.core, body.core) of (type ?: body.type)
     }
 
     surface is Surface.Var &&
@@ -134,7 +138,7 @@ fun Ctx.elaborate(
     synth(type)             -> {
       @Suppress("NAME_SHADOWING")
       val type = elaborate(surface.type, Value.Type)
-      elaborate(surface.term, env.eval(type.core))
+      elaborate(surface.target, env.eval(type.core))
     }
 
     check<Value>(type)      -> {

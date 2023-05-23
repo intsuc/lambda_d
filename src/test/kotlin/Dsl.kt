@@ -1,60 +1,114 @@
 import Core as C
 import Surface as S
 
-inline fun Π(
+fun Π(
+  param: S,
+  result: S,
+): S {
+  return S.Func(null, param, result)
+}
+
+fun Π(
   name: String,
   param: S,
   result: S,
-): S =
-  S.Func(name, param, result)
+): S {
+  return S.Func(name, param, result)
+}
 
-inline fun λ(
+fun λ(
+  body: S,
+): S {
+  return S.FuncOf(null, body)
+}
+
+fun λ(
   name: String,
   body: S,
-): S =
-  S.FuncOf(name, body)
+): S {
+  return S.FuncOf(name, body)
+}
 
-inline operator fun S.invoke(
+operator fun S.invoke(
   arg: S,
-): S =
-  S.App(this, arg)
+): S {
+  return S.App(this, arg)
+}
 
-inline fun let(
+fun let(
+  init: S,
+  body: S,
+): S {
+  return S.Let(null, init, body)
+}
+
+fun let(
   name: String,
   init: S,
   body: S,
-): S =
-  S.Let(name, init, body)
+): S {
+  return S.Let(name, init, body)
+}
 
-inline operator fun String.not(): S =
-  S.Var(this)
+operator fun String.not(): S {
+  return S.Var(this)
+}
 
-inline infix fun S.of(
+infix fun S.of(
   type: S,
-): S =
-  S.Anno(this, type)
+): S {
+  return S.Anno(this, type)
+}
 
-inline fun Π(
+fun Π(
   param: C,
   result: C,
-): C =
-  C.Func(param, result)
+): C {
+  return C.Func(null, param, result)
+}
 
-inline fun λ(
+fun Π(
+  name: String,
+  param: C,
+  result: C,
+): C {
+  return C.Func(name, param, result)
+}
+
+fun λ(
   body: C,
-): C =
-  C.FuncOf(body)
+): C {
+  return C.FuncOf(null, body)
+}
 
-inline operator fun C.invoke(
+fun λ(
+  name: String,
+  body: C,
+): C {
+  return C.FuncOf(name, body)
+}
+
+operator fun C.invoke(
   arg: C,
-): C =
-  C.App(this, arg)
+): C {
+  return C.App(this, arg)
+}
 
-inline fun let(
+fun let(
   init: C,
   body: C,
-): C =
-  C.Let(init, body)
+): C {
+  return C.Let(null, init, body)
+}
 
-inline operator fun Int.not(): C =
-  C.Var(this)
+fun let(
+  name: String,
+  init: C,
+  body: C,
+): C {
+  return C.Let(name, init, body)
+}
+
+operator fun Int.not(): C {
+  return C.Var(this)
+}

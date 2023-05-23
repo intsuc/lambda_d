@@ -17,15 +17,16 @@ object ElaborateTest {
       null,
     )
     assertEquals(
-      result.core,
       let(
-        λ(λ(!1)),
+        "id",
+        λ("A", λ("a", !1)),
         (!0)(C.Type)(C.Type),
       ),
+      result.core,
     )
     assertEquals(
-      result.type,
       V.Type,
+      result.type,
     )
   }
 
