@@ -1,3 +1,7 @@
+/**
+ * A raw surface term.
+ * [Surface] may or may not be well-formed.
+ */
 sealed class Surface {
   data object Type : Surface()
 

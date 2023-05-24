@@ -2,6 +2,12 @@ import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.plus
 
+/**
+ * A context for elaboration.
+ * [entries] and [terms] are always the same size.
+ * [types] may or may not be the same size as [entries] and [terms], depending on the desynchronization of term-level and type-level bindings.
+ * We only need to keep track of [types] as [Lvl] because it is only used to [quote] types.
+ */
 class Ctx private constructor(
   private val entries: PersistentList<Entry>,
   val terms: Env,

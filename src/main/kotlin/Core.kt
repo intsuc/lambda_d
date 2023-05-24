@@ -1,3 +1,8 @@
+/**
+ * An elaborated core term.
+ * [Core] must be well-typed.
+ * [type] is the type of this term, and can be used in subsequent compilation passes.
+ */
 sealed class Core {
   abstract val type: Core
 

@@ -1,5 +1,10 @@
 import kotlinx.collections.immutable.PersistentList
 
+/**
+ * A semantic value term.
+ * [Value] must be well-typed.
+ * [type] is the type of this term, and is used to restore the type information when [quote]ing this term.
+ */
 sealed class Value {
   abstract val type: Lazy<Value>
 

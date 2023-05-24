@@ -1,6 +1,7 @@
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
+// TODO: redundant?
 data class Result(
   val core: Core,
   val type: Value,
