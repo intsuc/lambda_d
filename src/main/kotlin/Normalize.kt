@@ -1,6 +1,13 @@
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.plus
 
+// Temporarily disable laziness to find bugs eagerly.
+inline fun <T> lazy(
+  block: () -> T,
+): Lazy<T> {
+  return lazyOf(block())
+}
+
 fun emptyEnv(): Env {
   return persistentListOf()
 }
@@ -8,7 +15,9 @@ fun emptyEnv(): Env {
 operator fun Closure.invoke(
   arg: Lazy<Value>,
 ): Value {
-  return (if (name == null) env else env + arg).eval(body)
+  val terms = if (termName == null) terms else terms + arg
+  val types = if (typeName == null) types else types + arg
+  return eval(terms, types, body)
 }
 
 fun Env.next(): Lvl {
@@ -18,10 +27,12 @@ fun Env.next(): Lvl {
 fun Env.normalize(
   core: Core,
 ): Core {
-  return next().quote(eval(core))
+  return next().quote(eval(this, this, core))
 }
 
-fun Env.eval(
+fun eval(
+  terms: Env,
+  types: Env,
   core: Core,
 ): Value {
   return when (core) {
@@ -30,23 +41,23 @@ fun Env.eval(
     }
 
     is Core.Func   -> {
-      val param = lazy { eval(core.param) }
-      val result = Closure(this, core.name, core.result)
+      val param = lazy { eval(terms, types, core.param) }
+      val result = Closure(terms, types, core.name, null, core.result)
       Value.Func(param, result)
     }
 
     is Core.FuncOf -> {
-      val body = Closure(this, core.name, core.body)
-      val type = lazy { eval(core.type) }
+      val body = Closure(terms, types, core.name, (core.type as Core.Func).name, core.body)
+      val type = lazy { eval(types, emptyEnv(), core.type) }
       Value.FuncOf(body, type)
     }
 
     is Core.App    -> {
-      val arg = lazy { eval(core.arg) }
-      when (val func = eval(core.func)) {
+      val arg = lazy { eval(terms, types, core.arg) }
+      when (val func = eval(terms, types, core.func)) {
         is Value.FuncOf -> func.body(arg)
         else            -> {
-          val type = lazy { eval(core.type) }
+          val type = lazy { eval(types, emptyEnv(), core.type) }
           Value.App(func, arg, type)
         }
       }
@@ -61,12 +72,12 @@ fun Env.eval(
     }
 
     is Core.Let    -> {
-      val init = lazy { eval(core.init) }
-      (this + init).eval(core.body)
+      val init = lazy { eval(terms, types, core.init) }
+      eval(terms + init, types + init, core.body)
     }
 
     is Core.Var    -> {
-      this[core.index.toLvl(next()).value].value
+      terms[core.index.toLvl(terms.next()).value].value
     }
   }
 }
@@ -81,16 +92,16 @@ fun Lvl.quote(
 
     is Value.Func   -> {
       val param = quote(value.param.value)
-      val result = (this + if (value.result.name == null) 0 else 1).quote(value.result(lazyOf(Value.Var(this, value.param))))
-      Core.Func(value.result.name, param, result)
+      val result = (this + if (value.result.termName == null) 0 else 1).quote(value.result(lazyOf(Value.Var(this, value.param))))
+      Core.Func(value.result.termName, param, result)
     }
 
     is Value.FuncOf -> {
       when (val funcType = value.type.value) {
         is Value.Func -> {
-          val body = (this + if (value.body.name == null) 0 else 1).quote(value.body(lazyOf(Value.Var(this, funcType.param))))
+          val body = (this + if (value.body.termName == null) 0 else 1).quote(value.body(lazyOf(Value.Var(this, funcType.param))))
           val type = quote(value.type.value)
-          Core.FuncOf(value.body.name, body, type)
+          Core.FuncOf(value.body.termName, body, type)
         }
         else          -> error("expected func, got $funcType")
       }
@@ -131,16 +142,16 @@ fun Lvl.conv(
     is Value.Func   -> {
       value2 is Value.Func &&
       conv(value1.param.value, value2.param.value) &&
-      (value1.result.name == null) == (value2.result.name == null) &&
-      lazyOf(Value.Var(this, value1.param)).let { (this + if (value1.result.name == null) 0 else 1).conv(value1.result(it), value2.result(it)) }
+      (value1.result.termName == null) == (value2.result.termName == null) &&
+      lazyOf(Value.Var(this, value1.param)).let { (this + if (value1.result.termName == null) 0 else 1).conv(value1.result(it), value2.result(it)) }
     }
 
     is Value.FuncOf -> {
       value2 is Value.FuncOf &&
       when (val funcType = value1.type.value) {
         is Value.Func -> {
-          (value1.body.name == null) == (value2.body.name == null) &&
-          lazyOf(Value.Var(this, funcType.param)).let { (this + if (value1.body.name == null) 0 else 1).conv(value1.body(it), value2.body(it)) }
+          (value1.body.termName == null) == (value2.body.termName == null) &&
+          lazyOf(Value.Var(this, funcType.param)).let { (this + if (value1.body.termName == null) 0 else 1).conv(value1.body(it), value2.body(it)) }
         }
         else          -> error("expected func, got $funcType")
       }

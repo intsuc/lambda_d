@@ -44,7 +44,9 @@ sealed class Value {
 typealias Env = PersistentList<Lazy<Value>>
 
 data class Closure(
-  val env: Env,
-  val name: String?,
+  val terms: Env,
+  val types: Env,
+  val termName: String?,
+  val typeName: String?,
   val body: Core,
 )

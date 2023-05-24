@@ -18,22 +18,22 @@ class Ctx private constructor(
   }
 
   fun extend(
-    termBinder: String?,
-    typeBinder: String?,
+    termName: String?,
+    typeName: String?,
     type: Lazy<Value>,
     value: Lazy<Value>,
   ): Ctx {
-    return if (termBinder == null) {
+    return if (termName == null) {
       Ctx(
         entries = entries,
         env = env,
-        types = types + if (typeBinder == null) 0 else 1,
+        types = types + if (typeName == null) 0 else 1,
       )
     } else {
       Ctx(
-        entries = entries + Entry(termBinder, type.value),
+        entries = entries + Entry(termName, type.value),
         env = env + value,
-        types = types + if (typeBinder == null) 0 else 1,
+        types = types + if (typeName == null) 0 else 1,
       )
     }
   }
