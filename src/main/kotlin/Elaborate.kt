@@ -11,7 +11,7 @@ infix fun Core.of(type: Value): Result {
 }
 
 inline fun Ctx.of(type: Value, build: (Core) -> Core): Result {
-  return build(next().quote(type)) of type
+  return build(types.quote(type)) of type
 }
 
 @OptIn(ExperimentalContracts::class)
@@ -53,7 +53,7 @@ fun Ctx.elaborate(
     synth(type)             -> {
       val param = elaborate(surface.param, Value.Type)
       val vParam = lazy { env.eval(param.core) }
-      val result = extend(surface.name, vParam, nextVar(vParam)).elaborate(surface.result, Value.Type)
+      val result = extend(surface.name, null, vParam, nextVar(vParam)).elaborate(surface.result, Value.Type)
       Core.Func(surface.name, param.core, result.core) of Value.Type
     }
 
@@ -66,7 +66,7 @@ fun Ctx.elaborate(
     check<Value.Func>(type) -> {
       val param = lazyOf(type.param.value)
       val next = nextVar(param)
-      val body = extend(surface.name, param, next).elaborate(surface.body, type.result(next))
+      val body = extend(surface.name, type.result.name, param, next).elaborate(surface.body, type.result(next))
       of(type) { Core.FuncOf(surface.name, body.core, it) }
     }
 
@@ -101,7 +101,7 @@ fun Ctx.elaborate(
     surface is Surface.Let &&
     match<Value>(type)      -> {
       val init = elaborate(surface.init, null)
-      val body = extend(surface.name, lazyOf(init.type), lazy { env.eval(init.core) }).elaborate(surface.body, type)
+      val body = extend(surface.name, surface.name, lazyOf(init.type), lazy { env.eval(init.core) }).elaborate(surface.body, type)
       Core.Let(surface.name, init.core, body.core) of (type ?: body.type)
     }
 

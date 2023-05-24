@@ -8,7 +8,7 @@ sealed class Value {
     override val type: Lazy<Value> get() = TYPE
   }
 
-  class Func(
+  data class Func(
     val param: Lazy<Value>,
     val result: Closure,
   ) : Value() {

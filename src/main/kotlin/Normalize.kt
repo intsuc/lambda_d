@@ -15,6 +15,12 @@ fun Env.next(): Lvl {
   return Lvl(size)
 }
 
+fun Env.normalize(
+  core: Core,
+): Core {
+  return next().quote(eval(core))
+}
+
 fun Env.eval(
   core: Core,
 ): Value {
