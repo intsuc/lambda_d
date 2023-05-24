@@ -25,4 +25,12 @@ object NormalizeTest {
       emptyEnv ().normalize(idDesync2),
     )
   }
+
+  @Test
+  fun idDesync3() {
+    assertEquals(
+      unitC,
+      emptyEnv ().normalize(idDesync3),
+    )
+  }
 }

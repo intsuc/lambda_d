@@ -38,7 +38,7 @@ object ElaborateTest {
     val result = Ctx().elaborate(
       let(
         "id",
-        λ(λ("a", v("a"))) of Π("A", TypeS, Π(v("A"), v("A"))),
+        λ("A", λ("a", v("a"))) of Π("A", TypeS, Π(v("A"), v("A"))),
         v("id")(UnitS)(unitS),
       ),
       null,
@@ -46,6 +46,21 @@ object ElaborateTest {
     assertEquals(idDesync2, result.core)
     assertEquals(V.Unit, result.type)
   }
+
+  @Test
+  fun idDesync3() {
+    val result = Ctx().elaborate(
+      let(
+        "id",
+        λ(λ("a", v("a"))) of Π("A", TypeS, Π(v("A"), v("A"))),
+        v("id")(UnitS)(unitS),
+      ),
+      null,
+    )
+    assertEquals(idDesync3, result.core)
+    assertEquals(V.Unit, result.type)
+  }
+
 
   @Test
   fun illTypedFuncOf() {
