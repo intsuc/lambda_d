@@ -93,3 +93,47 @@ val idDesync3Partial: Core = run {
     v(0, of = TAA)(UnitC, of = UU),
   )
 }
+
+val idSyncPartial1: Core = run {
+  val A = v(1, TypeC)
+  val AA = Π("a", v(0, TypeC), A)
+  val TAA = Π("A", TypeC, AA)
+  let(
+    "id",
+    λ("A", λ("a", v(0, of = A), of = AA), of = TAA),
+    v(0, of = TAA),
+  )
+}
+
+val idDesync1Partial1: Core = run {
+  val A = v(1, TypeC)
+  val AA = Π("a", v(0, TypeC), A)
+  val TAA = Π("A", TypeC, AA)
+  let(
+    "id",
+    λ(λ("a", v(0, of = A), of = AA), of = TAA),
+    v(0, of = TAA),
+  )
+}
+
+val idDesync2Partial1: Core = run {
+  val A = v(0, TypeC)
+  val AA = Π(v(0, TypeC), A)
+  val TAA = Π("A", TypeC, AA)
+  let(
+    "id",
+    λ("A", λ("a", v(0, of = A), of = AA), of = TAA),
+    v(0, of = TAA),
+  )
+}
+
+val idDesync3Partial1: Core = run {
+  val A = v(0, TypeC)
+  val AA = Π(v(0, TypeC), A)
+  val TAA = Π("A", TypeC, AA)
+  let(
+    "id",
+    λ(λ("a", v(0, of = A), of = AA), of = TAA),
+    v(0, of = TAA),
+  )
+}

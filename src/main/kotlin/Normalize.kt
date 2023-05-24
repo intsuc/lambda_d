@@ -27,7 +27,7 @@ fun Env.next(): Lvl {
 fun Env.normalize(
   core: Core,
 ): Core {
-  return next().quote(eval(this, this, core))
+  return quote(next(), next(), eval(this, this, core))
 }
 
 fun eval(
@@ -82,7 +82,9 @@ fun eval(
   }
 }
 
-fun Lvl.quote(
+fun quote(
+  terms: Lvl,
+  types: Lvl,
   value: Value,
 ): Core {
   return when (value) {
@@ -91,16 +93,24 @@ fun Lvl.quote(
     }
 
     is Value.Func   -> {
-      val param = quote(value.param.value)
-      val result = (this + if (value.result.termName == null) 0 else 1).quote(value.result(lazyOf(Value.Var(this, value.param))))
+      val param = quote(terms, types, value.param.value)
+      val result = quote(
+        (terms + if (value.result.termName == null) 0 else 1),
+        (types + if (value.result.typeName == null) 0 else 1),
+        value.result(lazyOf(Value.Var(terms, value.param))),
+      )
       Core.Func(value.result.termName, param, result)
     }
 
     is Value.FuncOf -> {
       when (val funcType = value.type.value) {
         is Value.Func -> {
-          val body = (this + if (value.body.termName == null) 0 else 1).quote(value.body(lazyOf(Value.Var(this, funcType.param))))
-          val type = quote(value.type.value)
+          val body = quote(
+            (terms + if (value.body.termName == null) 0 else 1),
+            (types + if (value.body.typeName == null) 0 else 1),
+            value.body(lazyOf(Value.Var(terms, funcType.param))),
+          )
+          val type = quote(types, Lvl(0), value.type.value)
           Core.FuncOf(value.body.termName, body, type)
         }
         else          -> error("expected func, got $funcType")
@@ -108,9 +118,9 @@ fun Lvl.quote(
     }
 
     is Value.App    -> {
-      val func = quote(value.func)
-      val arg = quote(value.arg.value)
-      val type = quote(value.type.value)
+      val func = quote(terms, types, value.func)
+      val arg = quote(terms, types, value.arg.value)
+      val type = quote(types, Lvl(0), value.type.value)
       Core.App(func, arg, type)
     }
 
@@ -123,8 +133,8 @@ fun Lvl.quote(
     }
 
     is Value.Var    -> {
-      val index = value.level.toIdx(this)
-      val type = quote(value.type.value)
+      val index = value.level.toIdx(terms)
+      val type = quote(types, Lvl(0), value.type.value)
       Core.Var(index, type)
     }
   }

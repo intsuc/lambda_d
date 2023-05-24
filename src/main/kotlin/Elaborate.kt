@@ -11,7 +11,7 @@ infix fun Core.of(type: Value): Result {
 }
 
 inline fun Ctx.of(type: Value, build: (Core) -> Core): Result {
-  return build(types.quote(type)) of type
+  return build(quote(types, Lvl(0), type)) of type
 }
 
 @OptIn(ExperimentalContracts::class)
