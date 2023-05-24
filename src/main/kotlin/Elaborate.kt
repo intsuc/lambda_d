@@ -52,7 +52,7 @@ fun Ctx.elaborate(
     surface is Surface.Func &&
     synth(type)             -> {
       val param = elaborate(surface.param, Value.Type)
-      val vParam = lazy { eval(env, env, param.core) }
+      val vParam = lazy { eval(terms, terms, param.core) }
       val result = extend(surface.name, null, vParam, nextVar(vParam)).elaborate(surface.result, Value.Type)
       Core.Func(surface.name, param.core, result.core) of Value.Type
     }
@@ -81,7 +81,8 @@ fun Ctx.elaborate(
       when (val funcType = func.type) {
         is Value.Func -> {
           val arg = elaborate(surface.arg, funcType.param.value)
-          val type = funcType.result(lazy { eval(env, env, arg.core) })
+          val vArg = lazy { eval(terms, terms, arg.core) }
+          val type = funcType.result(vArg)
           of(type) { Core.App(func.core, arg.core, it) }
         }
         else          -> error("expected: func, actual: $funcType")
@@ -101,7 +102,8 @@ fun Ctx.elaborate(
     surface is Surface.Let &&
     match<Value>(type)      -> {
       val init = elaborate(surface.init, null)
-      val body = extend(surface.name, surface.name, lazyOf(init.type), lazy { eval(env, env, init.core) }).elaborate(surface.body, type)
+      val vInit = lazy { eval(terms, terms, init.core) }
+      val body = extend(surface.name, surface.name, lazyOf(init.type), vInit).elaborate(surface.body, type)
       Core.Let(surface.name, init.core, body.core) of (type ?: body.type)
     }
 
@@ -114,7 +116,8 @@ fun Ctx.elaborate(
     surface is Surface.Anno &&
     synth(type)             -> {
       val type = elaborate(surface.type, Value.Type)
-      elaborate(surface.target, eval(env, env, type.core))
+      val vType = eval(terms, terms, type.core)
+      elaborate(surface.target, vType)
     }
 
     check<Value>(type)      -> {

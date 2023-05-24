@@ -4,7 +4,7 @@ import kotlinx.collections.immutable.plus
 
 class Ctx private constructor(
   private val entries: PersistentList<Entry>,
-  val env: Env,
+  val terms: Env,
   val types: Lvl,
 ) {
   fun next(): Lvl {
@@ -26,13 +26,13 @@ class Ctx private constructor(
     return if (termName == null) {
       Ctx(
         entries = entries,
-        env = env,
+        terms = terms,
         types = types + if (typeName == null) 0 else 1,
       )
     } else {
       Ctx(
         entries = entries + Entry(termName, type.value),
-        env = env + value,
+        terms = terms + value,
         types = types + if (typeName == null) 0 else 1,
       )
     }
