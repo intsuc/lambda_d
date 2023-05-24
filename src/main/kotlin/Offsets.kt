@@ -9,9 +9,9 @@ value class Lvl(val value: Int) {
 }
 
 fun Idx.toLvl(next: Lvl): Lvl {
-  return Lvl(next.value - this.value - 1)
+  return Lvl(next.value - this.value - 1).also { check(it.value >= 0) }
 }
 
 fun Lvl.toIdx(next: Lvl): Idx {
-  return Idx(next.value - this.value - 1)
+  return Idx(next.value - this.value - 1).also { check(it.value >= 0) }
 }

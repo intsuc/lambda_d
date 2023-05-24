@@ -47,7 +47,7 @@ class Ctx private constructor(
 
   companion object {
     operator fun invoke(): Ctx {
-      return Ctx(persistentListOf(), persistentListOf())
+      return Ctx(persistentListOf(), emptyEnv())
     }
   }
 }

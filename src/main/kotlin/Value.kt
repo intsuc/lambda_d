@@ -9,7 +9,6 @@ sealed class Value {
   }
 
   class Func(
-    val name: String?,
     val param: Lazy<Value>,
     val result: Closure,
   ) : Value() {
@@ -17,7 +16,6 @@ sealed class Value {
   }
 
   data class FuncOf(
-    val name: String?,
     val body: Closure,
     override val type: Lazy<Value>,
   ) : Value()
@@ -47,5 +45,6 @@ typealias Env = PersistentList<Lazy<Value>>
 
 data class Closure(
   val env: Env,
+  val name: String?,
   val body: Core,
 )
