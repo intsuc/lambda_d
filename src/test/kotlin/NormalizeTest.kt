@@ -6,7 +6,7 @@ object NormalizeTest {
   fun idSync() {
     assertEquals(
       unitC,
-      emptyEnv ().normalize(idSync),
+      emptyEnv().normalize(idSync),
     )
   }
 
@@ -14,7 +14,7 @@ object NormalizeTest {
   fun idDesync1() {
     assertEquals(
       unitC,
-      emptyEnv ().normalize(idDesync1),
+      emptyEnv().normalize(idDesync1),
     )
   }
 
@@ -22,7 +22,7 @@ object NormalizeTest {
   fun idDesync2() {
     assertEquals(
       unitC,
-      emptyEnv ().normalize(idDesync2),
+      emptyEnv().normalize(idDesync2),
     )
   }
 
@@ -30,7 +30,39 @@ object NormalizeTest {
   fun idDesync3() {
     assertEquals(
       unitC,
-      emptyEnv ().normalize(idDesync3),
+      emptyEnv().normalize(idDesync3),
+    )
+  }
+
+  @Test
+  fun idSyncPartial() {
+    assertEquals(
+      λ("a", v(0, of = UnitC), of = Π("a", UnitC, UnitC)),
+      emptyEnv().normalize(idSyncPartial),
+    )
+  }
+
+  @Test
+  fun idDesync1Partial() {
+    assertEquals(
+      λ("a", v(0, of = UnitC), of = Π("a", UnitC, UnitC)),
+      emptyEnv().normalize(idDesync1Partial),
+    )
+  }
+
+  @Test
+  fun idDesync2Partial() {
+    assertEquals(
+      λ("a", v(0, of = UnitC), of = Π(UnitC, UnitC)),
+      emptyEnv().normalize(idDesync2Partial),
+    )
+  }
+
+  @Test
+  fun idDesync3Partial() {
+    assertEquals(
+      λ("a", v(0, of = UnitC), of = Π(UnitC, UnitC)),
+      emptyEnv().normalize(idDesync3Partial),
     )
   }
 }
