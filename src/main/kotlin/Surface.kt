@@ -1,42 +1,63 @@
-/**
- * A raw surface term.
- * [Surface] may or may not be well-formed.
- */
 sealed class Surface {
-  data object Type : Surface()
+  /**
+   * A raw surface term.
+   * [Term] may or may not be well-formed.
+   */
+  sealed class Term {
+    data object Type : Term()
 
-  data class Func(
-    val name: String?,
-    val param: Surface,
-    val result: Surface,
-  ) : Surface()
+    data class Func(
+      val binder: Pattern,
+      val param: Term,
+      val result: Term,
+    ) : Term()
 
-  data class FuncOf(
-    val name: String?,
-    val body: Surface,
-  ) : Surface()
+    data class FuncOf(
+      val binder: Pattern,
+      val body: Term,
+    ) : Term()
 
-  data class App(
-    val func: Surface,
-    val arg: Surface,
-  ) : Surface()
+    data class App(
+      val func: Term,
+      val arg: Term,
+    ) : Term()
 
-  data object Unit : Surface()
+    data object Unit : Term()
 
-  data object UnitOf : Surface()
+    data object UnitOf : Term()
 
-  data class Let(
-    val name: String?,
-    val init: Surface,
-    val body: Surface,
-  ) : Surface()
+    data class Let(
+      val binder: Pattern,
+      val init: Term,
+      val body: Term,
+    ) : Term()
 
-  data class Var(
-    val name: String,
-  ) : Surface()
+    data class Var(
+      val name: String,
+    ) : Term()
 
-  data class Anno(
-    val target: Surface,
-    val type: Surface,
-  ) : Surface()
+    data class Anno(
+      val target: Term,
+      val type: Term,
+    ) : Term()
+  }
+
+  /**
+   * A raw surface pattern.
+   * [Pattern] may or may not be well-formed.
+   */
+  sealed class Pattern {
+    data object UnitOf : Pattern()
+
+    data class Var(
+      val name: String,
+    ) : Pattern()
+
+    data object Drop : Pattern()
+
+    data class Anno(
+      val target: Pattern,
+      val type: Term,
+    ) : Pattern()
+  }
 }

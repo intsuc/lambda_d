@@ -1,5 +1,7 @@
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.plus
+import Core as C
+import Value as V
 
 // Temporarily disable laziness to find bugs eagerly.
 inline fun <T> lazy(
@@ -13,177 +15,281 @@ fun emptyEnv(): Env {
 }
 
 operator fun Closure.invoke(
-  arg: Lazy<Value>,
-): Value {
-  val terms = if (termName == null) terms else terms + arg
-  val types = if (typeName == null) types else types + arg
-  return eval(terms, types, body)
+  arg: Lazy<V.Term>,
+): V.Term {
+  val env0 = env0 + (binder0 matches arg)
+  val env1 = env1 + (binder1 matches arg)
+  return evalTerm(env0, env1, body0)
+}
+
+fun Closure.open(): V.Term {
+  val env0 = env0 + env0.next().vars(binder0)
+  val env1 = env1 + env1.next().vars(binder1)
+  return evalTerm(env0, env1, body0)
 }
 
 fun Env.next(): Lvl {
   return Lvl(size)
 }
 
-fun Env.normalize(
-  core: Core,
-): Core {
-  return quote(next(), next(), eval(this, this, core))
+fun Env.normalizeTerm(
+  term: C.Term,
+): C.Term {
+  return quoteTerm(next(), next(), evalTerm(this, this, term))
 }
 
-fun eval(
-  terms: Env,
-  types: Env,
-  core: Core,
-): Value {
-  return when (core) {
-    is Core.Type   -> {
-      Value.Type
+/**
+ * Evaluates [term0] under [env0] and [env1].
+ * @param env0 The environment at level *n*.
+ * @param env1 The environment at level *n+1*.
+ * @param term0 The term to be evaluated at level *n*.
+ */
+fun evalTerm(
+  env0: Env,
+  env1: Env,
+  term0: C.Term,
+): V.Term {
+  return when (term0) {
+    is C.Term.Type   -> {
+      V.Term.Type
     }
 
-    is Core.Func   -> {
-      val param = lazy { eval(terms, types, core.param) }
-      val result = Closure(terms, types, core.name, null, core.result)
-      Value.Func(param, result)
+    is C.Term.Func   -> {
+      val param = lazy { evalTerm(env0, env1, term0.param) }
+      val binder0 = evalPattern(env1, term0.binder)
+      val result = Closure(env0, env1, binder0, V.Pattern.Drop(V.Term.Type.TYPE) /* TODO */, term0.result)
+      V.Term.Func(param, result)
     }
 
-    is Core.FuncOf -> {
-      val body = Closure(terms, types, core.name, (core.type as Core.Func).name, core.body)
-      val type = lazy { eval(types, emptyEnv(), core.type) }
-      Value.FuncOf(body, type)
+    is C.Term.FuncOf -> {
+      val binder0 = evalPattern(env1, term0.binder)
+      val binder1 = evalPattern(env1, (term0.type as C.Term.Func /* TODO: safe? */).binder)
+      val body = Closure(env0, env1, binder0, binder1, term0.body)
+      val type = lazy { evalTerm(env1, emptyEnv(), term0.type) }
+      V.Term.FuncOf(body, type)
     }
 
-    is Core.App    -> {
-      val arg = lazy { eval(terms, types, core.arg) }
-      when (val func = eval(terms, types, core.func)) {
-        is Value.FuncOf -> func.body(arg)
-        else            -> {
-          val type = lazy { eval(types, emptyEnv(), core.type) }
-          Value.App(func, arg, type)
+    is C.Term.App    -> {
+      val arg = lazy { evalTerm(env0, env1, term0.arg) }
+      when (val func = evalTerm(env0, env1, term0.func)) {
+        is V.Term.FuncOf -> func.body(arg)
+        else             -> {
+          val type = lazy { evalTerm(env1, emptyEnv(), term0.type) }
+          V.Term.App(func, arg, type)
         }
       }
     }
 
-    is Core.Unit   -> {
-      Value.Unit
+    is C.Term.Unit   -> {
+      V.Term.Unit
     }
 
-    is Core.UnitOf -> {
-      Value.UnitOf
+    is C.Term.UnitOf -> {
+      V.Term.UnitOf
     }
 
-    is Core.Let    -> {
-      val init = lazy { eval(terms, types, core.init) }
-      eval(terms + init, types + init, core.body)
+    is C.Term.Let    -> {
+      val init = lazy { evalTerm(env0, env1, term0.init) }
+      evalTerm(env0 + init, env1 + init, term0.body)
     }
 
-    is Core.Var    -> {
-      terms[core.index.toLvl(terms.next()).value].value
+    is C.Term.Var    -> {
+      env0[term0.index.toLvl(env0.next()).value].value
     }
   }
 }
 
-fun quote(
-  terms: Lvl,
-  types: Lvl,
-  value: Value,
-): Core {
-  return when (value) {
-    is Value.Type   -> {
-      Core.Type
+fun quoteTerm(
+  size0: Lvl,
+  size1: Lvl,
+  value0: V.Term,
+): C.Term {
+  return when (value0) {
+    is V.Term.Type   -> {
+      C.Term.Type
     }
 
-    is Value.Func   -> {
-      val param = quote(terms, types, value.param.value)
-      val result = quote(
-        (terms + if (value.result.termName == null) 0 else 1),
-        (types + if (value.result.typeName == null) 0 else 1),
-        value.result(lazyOf(Value.Var(terms, value.param))),
+    is V.Term.Func   -> {
+      val binder = quotePattern(size1, value0.result.binder0)
+      val param = quoteTerm(size0, size1, value0.param.value)
+      val result = quoteTerm(
+        size0 + size0.vars(value0.result.binder0).size,
+        size1 + size1.vars(value0.result.binder1).size,
+        value0.result.open(),
       )
-      Core.Func(value.result.termName, param, result)
+      C.Term.Func(binder, param, result)
     }
 
-    is Value.FuncOf -> {
-      when (val funcType = value.type.value) {
-        is Value.Func -> {
-          val body = quote(
-            (terms + if (value.body.termName == null) 0 else 1),
-            (types + if (value.body.typeName == null) 0 else 1),
-            value.body(lazyOf(Value.Var(terms, funcType.param))),
-          )
-          val type = quote(types, Lvl(0), value.type.value)
-          Core.FuncOf(value.body.termName, body, type)
-        }
-        else          -> error("expected func, got $funcType")
-      }
+    is V.Term.FuncOf -> {
+      val binder = quotePattern(size1, value0.body.binder0)
+      val body = quoteTerm(
+        size0 + size0.vars(value0.body.binder0).size,
+        size1 + size1.vars(value0.body.binder1).size,
+        value0.body.open(),
+      )
+      val type = quoteTerm(size1, Lvl(0), value0.type.value)
+      C.Term.FuncOf(binder, body, type)
     }
 
-    is Value.App    -> {
-      val func = quote(terms, types, value.func)
-      val arg = quote(terms, types, value.arg.value)
-      val type = quote(types, Lvl(0), value.type.value)
-      Core.App(func, arg, type)
+    is V.Term.App    -> {
+      val func = quoteTerm(size0, size1, value0.func)
+      val arg = quoteTerm(size0, size1, value0.arg.value)
+      val type = quoteTerm(size1, Lvl(0), value0.type.value)
+      C.Term.App(func, arg, type)
     }
 
-    is Value.Unit   -> {
-      Core.Unit
+    is V.Term.Unit   -> {
+      C.Term.Unit
     }
 
-    is Value.UnitOf -> {
-      Core.UnitOf
+    is V.Term.UnitOf -> {
+      C.Term.UnitOf
     }
 
-    is Value.Var    -> {
-      val index = value.level.toIdx(terms)
-      val type = quote(types, Lvl(0), value.type.value)
-      Core.Var(index, type)
+    is V.Term.Var    -> {
+      val index = value0.level.toIdx(size0)
+      val type = quoteTerm(size1, Lvl(0), value0.type.value)
+      C.Term.Var(value0.name, index, type)
     }
   }
 }
 
-fun Lvl.conv(
-  value1: Value,
-  value2: Value,
+fun evalPattern(
+  env1: Env,
+  pattern0: C.Pattern,
+): V.Pattern {
+  return when (pattern0) {
+    is C.Pattern.UnitOf -> {
+      V.Pattern.UnitOf
+    }
+
+    is C.Pattern.Var    -> {
+      val type = lazy { evalTerm(env1, emptyEnv(), pattern0.type) }
+      V.Pattern.Var(pattern0.name, type)
+    }
+
+    is C.Pattern.Drop   -> {
+      val type = lazy { evalTerm(env1, emptyEnv(), pattern0.type) }
+      V.Pattern.Drop(type)
+    }
+  }
+}
+
+fun quotePattern(
+  lvl1: Lvl,
+  pattern0: V.Pattern,
+): C.Pattern {
+  return when (pattern0) {
+    is V.Pattern.UnitOf -> {
+      C.Pattern.UnitOf
+    }
+
+    is V.Pattern.Var    -> {
+      val type = quoteTerm(lvl1, Lvl(0), pattern0.type.value)
+      C.Pattern.Var(pattern0.name, type)
+    }
+
+    is V.Pattern.Drop   -> {
+      val type = quoteTerm(lvl1, Lvl(0), pattern0.type.value)
+      C.Pattern.Drop(type)
+    }
+  }
+}
+
+infix fun V.Pattern.matches(
+  term: Lazy<V.Term>,
+): List<Lazy<V.Term>> {
+  return when (this) {
+    is V.Pattern.UnitOf -> {
+      emptyList()
+    }
+
+    is V.Pattern.Var    -> {
+      listOf(term)
+    }
+
+    is V.Pattern.Drop   -> {
+      emptyList()
+    }
+  }
+}
+
+fun Lvl.vars(
+  pattern: V.Pattern,
+): List<Lazy<V.Term.Var>> {
+  return when (pattern) {
+    is V.Pattern.UnitOf -> {
+      emptyList()
+    }
+
+    is V.Pattern.Var    -> {
+      listOf(lazyOf(V.Term.Var(pattern.name, this, pattern.type)))
+    }
+
+    is V.Pattern.Drop   -> {
+      emptyList()
+    }
+  }
+}
+
+fun Lvl.convTerm(
+  valueL: V.Term,
+  valueR: V.Term,
 ): Boolean {
-  return when (value1) {
-    is Value.Type   -> {
-      value2 is Value.Type
+  return when (valueL) {
+    is V.Term.Type   -> {
+      valueR is V.Term.Type
     }
 
-    is Value.Func   -> {
-      value2 is Value.Func &&
-      conv(value1.param.value, value2.param.value) &&
-      (value1.result.termName == null) == (value2.result.termName == null) &&
-      lazyOf(Value.Var(this, value1.param)).let { (this + if (value1.result.termName == null) 0 else 1).conv(value1.result(it), value2.result(it)) }
+    is V.Term.Func   -> {
+      valueR is V.Term.Func &&
+      convTerm(valueL.param.value, valueR.param.value) &&
+      convPattern(valueL.result.binder0, valueR.result.binder0) &&
+      (this + vars(valueL.result.binder0).size).convTerm(valueL.result.open(), valueR.result.open())
     }
 
-    is Value.FuncOf -> {
-      value2 is Value.FuncOf &&
-      when (val funcType = value1.type.value) {
-        is Value.Func -> {
-          (value1.body.termName == null) == (value2.body.termName == null) &&
-          lazyOf(Value.Var(this, funcType.param)).let { (this + if (value1.body.termName == null) 0 else 1).conv(value1.body(it), value2.body(it)) }
-        }
-        else          -> error("expected func, got $funcType")
-      }
+    is V.Term.FuncOf -> {
+      valueR is V.Term.FuncOf &&
+      convPattern(valueL.body.binder0, valueR.body.binder0) &&
+      (this + vars(valueL.body.binder0).size).convTerm(valueL.body.open(), valueR.body.open())
     }
 
-    is Value.App    -> {
-      value2 is Value.App &&
-      conv(value1.func, value2.func) &&
-      conv(value1.arg.value, value2.arg.value)
+    is V.Term.App    -> {
+      valueR is V.Term.App &&
+      convTerm(valueL.func, valueR.func) &&
+      convTerm(valueL.arg.value, valueR.arg.value)
     }
 
-    is Value.Unit   -> {
-      value2 is Value.Unit
+    is V.Term.Unit   -> {
+      valueR is V.Term.Unit
     }
 
-    is Value.UnitOf -> {
-      value2 is Value.UnitOf
+    is V.Term.UnitOf -> {
+      valueR is V.Term.UnitOf
     }
 
-    is Value.Var    -> {
-      value2 is Value.Var &&
-      value1.level == value2.level
+    is V.Term.Var    -> {
+      valueR is V.Term.Var &&
+      valueL.level == valueR.level
+    }
+  }
+}
+
+fun convPattern(
+  patternL: V.Pattern,
+  patternR: V.Pattern,
+): Boolean {
+  return when (patternL) {
+    is V.Pattern.UnitOf -> {
+      patternR is V.Pattern.UnitOf
+    }
+
+    is V.Pattern.Var    -> {
+      patternR is V.Pattern.Var
+    }
+
+    is V.Pattern.Drop   -> {
+      patternR is V.Pattern.Drop
     }
   }
 }

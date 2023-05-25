@@ -1,55 +1,84 @@
-/**
- * An elaborated core term.
- * [Core] must be well-typed.
- * [type] is the type of this term, and can be used in subsequent compilation passes.
- */
 sealed class Core {
-  abstract val type: Core
+  /**
+   * An elaborated syntactic term.
+   * [Term] must be well-typed.
+   */
+  sealed class Term {
+    /**
+     * The type of this term, and can be used in subsequent compilation passes.
+     */
+    abstract val type: Term
 
-  data object Type : Core() {
-    // Type in type
-    override val type: Core get() = Type
+    data object Type : Term() {
+      // Type in type
+      override val type: Term get() = Type
+    }
+
+    data class Func(
+      val binder: Pattern,
+      val param: Term,
+      val result: Term,
+    ) : Term() {
+      override val type: Term get() = Type
+    }
+
+    data class FuncOf(
+      val binder: Pattern,
+      val body: Term,
+      override val type: Term,
+    ) : Term()
+
+    data class App(
+      val func: Term,
+      val arg: Term,
+      override val type: Term,
+    ) : Term()
+
+    data object Unit : Term() {
+      override val type: Term get() = Type
+    }
+
+    data object UnitOf : Term() {
+      override val type: Term get() = Unit
+    }
+
+    data class Let(
+      val binder: Pattern,
+      val init: Term,
+      val body: Term,
+    ) : Term() {
+      // Store the type of the body to avoid possible cascading field accesses
+      override val type: Term = body.type
+    }
+
+    data class Var(
+      val name: String,
+      val index: Idx,
+      override val type: Term,
+    ) : Term()
   }
 
-  data class Func(
-    val name: String?,
-    val param: Core,
-    val result: Core,
-  ) : Core() {
-    override val type: Core get() = Type
+  /**
+   * An elaborated syntactic pattern.
+   * [Pattern] must be well-typed.
+   */
+  sealed class Pattern {
+    /**
+     * The type of this term, and can be used in subsequent compilation passes.
+     */
+    abstract val type: Term
+
+    data object UnitOf : Pattern() {
+      override val type: Term get() = Term.Unit
+    }
+
+    data class Var(
+      val name: String,
+      override val type: Term,
+    ) : Pattern()
+
+    data class Drop(
+      override val type: Term,
+    ) : Pattern()
   }
-
-  data class FuncOf(
-    val name: String?,
-    val body: Core,
-    override val type: Core,
-  ) : Core()
-
-  data class App(
-    val func: Core,
-    val arg: Core,
-    override val type: Core,
-  ) : Core()
-
-  data object Unit : Core() {
-    override val type: Core get() = Type
-  }
-
-  data object UnitOf : Core() {
-    override val type: Core get() = Unit
-  }
-
-  data class Let(
-    val name: String?,
-    val init: Core,
-    val body: Core,
-  ) : Core() {
-    // Store the type of the body to avoid cascading field accesses
-    override val type: Core = body.type
-  }
-
-  data class Var(
-    val index: Idx,
-    override val type: Core,
-  ) : Core()
 }
