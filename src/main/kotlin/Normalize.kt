@@ -89,10 +89,8 @@ fun evalTerm(
     }
 
     is C.Term.Let    -> {
-      val binder = evalPattern(env1, term0.binder)
       val init = lazy { evalTerm(env0, env1, term0.init) }
-      val matched = binder matches init
-      evalTerm(env0 + matched, env1 + matched, term0.body)
+      evalTerm(env0 + init, env1 + init, term0.body)
     }
 
     is C.Term.Var    -> {

@@ -6,16 +6,15 @@ object NormalizeTest {
   fun idSync() {
     assertEquals(
       unitC,
-      emptyEnv().normalizeTerm(idSync),
+      emptyEnv().normalize(idSync),
     )
   }
 
-  /*
   @Test
   fun idDesync1() {
     assertEquals(
       unitC,
-      emptyEnv().normalizeTerm(idDesync1),
+      emptyEnv().normalize(idDesync1),
     )
   }
 
@@ -23,7 +22,7 @@ object NormalizeTest {
   fun idDesync2() {
     assertEquals(
       unitC,
-      emptyEnv().normalizeTerm(idDesync2),
+      emptyEnv().normalize(idDesync2),
     )
   }
 
@@ -31,7 +30,7 @@ object NormalizeTest {
   fun idDesync3() {
     assertEquals(
       unitC,
-      emptyEnv().normalizeTerm(idDesync3),
+      emptyEnv().normalize(idDesync3),
     )
   }
 
@@ -39,7 +38,7 @@ object NormalizeTest {
   fun idSyncPartial() {
     assertEquals(
       λ("a", v(0, of = UnitC), of = Π("a", UnitC, UnitC)),
-      emptyEnv().normalizeTerm(idSyncPartial),
+      emptyEnv().normalize(idSyncPartial),
     )
   }
 
@@ -47,7 +46,7 @@ object NormalizeTest {
   fun idDesync1Partial() {
     assertEquals(
       λ("a", v(0, of = UnitC), of = Π("a", UnitC, UnitC)),
-      emptyEnv().normalizeTerm(idDesync1Partial),
+      emptyEnv().normalize(idDesync1Partial),
     )
   }
 
@@ -55,7 +54,7 @@ object NormalizeTest {
   fun idDesync2Partial() {
     assertEquals(
       λ("a", v(0, of = UnitC), of = Π(UnitC, UnitC)),
-      emptyEnv().normalizeTerm(idDesync2Partial),
+      emptyEnv().normalize(idDesync2Partial),
     )
   }
 
@@ -63,7 +62,7 @@ object NormalizeTest {
   fun idDesync3Partial() {
     assertEquals(
       λ("a", v(0, of = UnitC), of = Π(UnitC, UnitC)),
-      emptyEnv().normalizeTerm(idDesync3Partial),
+      emptyEnv().normalize(idDesync3Partial),
     )
   }
 
@@ -74,7 +73,7 @@ object NormalizeTest {
     val TAA = Π("A", TypeC, AA)
     assertEquals(
       λ("A", λ("a", v(0, of = A), of = AA), of = TAA),
-      emptyEnv().normalizeTerm(idSyncPartial1),
+      emptyEnv().normalize(idSyncPartial1),
     )
   }
 
@@ -85,7 +84,7 @@ object NormalizeTest {
     val TAA = Π("A", TypeC, AA)
     assertEquals(
       λ(λ("a", v(0, of = A), of = AA), of = TAA),
-      emptyEnv().normalizeTerm(idDesync1Partial1),
+      emptyEnv().normalize(idDesync1Partial1),
     )
   }
 
@@ -96,7 +95,7 @@ object NormalizeTest {
     val TAA = Π("A", TypeC, AA)
     assertEquals(
       λ("A", λ("a", v(0, of = A), of = AA), of = TAA),
-      emptyEnv().normalizeTerm(idDesync2Partial1),
+      emptyEnv().normalize(idDesync2Partial1),
     )
   }
 
@@ -107,8 +106,7 @@ object NormalizeTest {
     val TAA = Π("A", TypeC, AA)
     assertEquals(
       λ(λ("a", v(0, of = A), of = AA), of = TAA),
-      emptyEnv().normalizeTerm(idDesync3Partial1),
+      emptyEnv().normalize(idDesync3Partial1),
     )
   }
-   */
 }

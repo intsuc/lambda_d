@@ -1,129 +1,138 @@
 import Core as C
 import Surface as S
 
-val TypeS: S.Term = S.Term.Type
+val TypeS: S = S.Type
 
 fun Π(
-  name: S.Pattern,
-  param: S.Term,
-  result: S.Term,
-): S.Term {
-  return S.Term.Func(name, param, result)
+  param: S,
+  result: S,
+): S {
+  return S.Func(null, param, result)
+}
+
+fun Π(
+  name: String,
+  param: S,
+  result: S,
+): S {
+  return S.Func(name, param, result)
 }
 
 fun λ(
-  name: S.Pattern,
-  body: S.Term,
-): S.Term {
-  return S.Term.FuncOf(name, body)
+  body: S,
+): S {
+  return S.FuncOf(null, body)
 }
 
-operator fun S.Term.invoke(
-  arg: S.Term,
-): S.Term {
-  return S.Term.App(this, arg)
+fun λ(
+  name: String,
+  body: S,
+): S {
+  return S.FuncOf(name, body)
+}
+
+operator fun S.invoke(
+  arg: S,
+): S {
+  return S.App(this, arg)
 }
 
 @JvmField
-val UnitS: S.Term = S.Term.Unit
+val UnitS: S = S.Unit
 
 @JvmField
-val unitS: S.Term = S.Term.UnitOf
+val unitS: S = S.UnitOf
 
 fun let(
-  name: S.Pattern,
-  init: S.Term,
-  body: S.Term,
-): S.Term {
-  return S.Term.Let(name, init, body)
+  init: S,
+  body: S,
+): S {
+  return S.Let(null, init, body)
+}
+
+fun let(
+  name: String,
+  init: S,
+  body: S,
+): S {
+  return S.Let(name, init, body)
 }
 
 fun v(
   name: String,
-): S.Term {
-  return S.Term.Var(name)
+): S {
+  return S.Var(name)
 }
 
-infix fun S.Term.of(
-  type: S.Term,
-): S.Term {
-  return S.Term.Anno(this, type)
+infix fun S.of(
+  type: S,
+): S {
+  return S.Anno(this, type)
 }
 
-val unitPS: S.Pattern = S.Pattern.UnitOf
-
-fun vP(
-  name: String,
-): S.Pattern {
-  return S.Pattern.Var(name)
-}
-
-val _S: S.Pattern.Drop = S.Pattern.Drop
-
-infix fun S.Pattern.of(
-  type: S.Term,
-): S.Pattern {
-  return S.Pattern.Anno(this, type)
-}
-
-val TypeC: C.Term = C.Term.Type
+val TypeC: C = C.Type
 
 fun Π(
-  name: C.Pattern,
-  param: C.Term,
-  result: C.Term,
-): C.Term {
-  return C.Term.Func(name, param, result)
+  param: C,
+  result: C,
+): C {
+  return C.Func(null, param, result)
+}
+
+fun Π(
+  name: String,
+  param: C,
+  result: C,
+): C {
+  return C.Func(name, param, result)
 }
 
 fun λ(
-  name: C.Pattern,
-  body: C.Term,
-  of: C.Term,
-): C.Term {
-  return C.Term.FuncOf(name, body, of)
+  body: C,
+  of: C,
+): C {
+  return C.FuncOf(null, body, of)
 }
 
-operator fun C.Term.invoke(
-  arg: C.Term,
-  of: C.Term,
-): C.Term {
-  return C.Term.App(this, arg, of)
+fun λ(
+  name: String,
+  body: C,
+  of: C,
+): C {
+  return C.FuncOf(name, body, of)
+}
+
+operator fun C.invoke(
+  arg: C,
+  of: C,
+): C {
+  return C.App(this, arg, of)
 }
 
 @JvmField
-val UnitC: C.Term = C.Term.Unit
+val UnitC: C = C.Unit
 
 @JvmField
-val unitC: C.Term = C.Term.UnitOf
+val unitC: C = C.UnitOf
 
 fun let(
-  name: C.Pattern,
-  init: C.Term,
-  body: C.Term,
-): C.Term {
-  return C.Term.Let(name, init, body)
+  init: C,
+  body: C,
+): C {
+  return C.Let(null, init, body)
+}
+
+fun let(
+  name: String,
+  init: C,
+  body: C,
+): C {
+  return C.Let(name, init, body)
 }
 
 fun v(
-  name: String,
   index: Int,
-  of: C.Term,
-): C.Term {
-  return C.Term.Var(name, Idx(index), of)
-}
-
-val unitPC: C.Pattern = C.Pattern.UnitOf
-
-fun vP(
-  name: String,
-  of: C.Term,
-): C.Pattern {
-  return C.Pattern.Var(name, of)
-}
-
-fun _C(
-  of: C.Term,
-): C.Pattern.Drop {
-  return C.Pattern.Drop(of)
+  of: C,
+): C {
+  return C.Var(Idx(index), of)
 }
