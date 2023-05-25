@@ -1,24 +1,22 @@
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
-import Core as C
-import Surface as S
-import Value as V
 
-data class Result<out T>(
-  val value: T,
-  val type: V.Term,
+// TODO: redundant?
+data class Result(
+  val core: Core,
+  val type: Value,
 )
 
-infix fun <T> T.of(type: V.Term): Result<T> {
+infix fun Core.of(type: Value): Result {
   return Result(this, type)
 }
 
-inline fun <T> Ctx.resultOf(type: V.Term, build: (type: C.Term) -> T): Result<T> {
-  return build(quoteTerm(env1.next(), Lvl(0), type)) of type
+inline fun Ctx.of(type: Value, build: (Core) -> Core): Result {
+  return build(quote(types, Lvl(0), type)) of type
 }
 
 @OptIn(ExperimentalContracts::class)
-fun synth(type: V.Term?): Boolean {
+fun synth(type: Value?): Boolean {
   contract {
     returns(true) implies (type == null)
   }
@@ -26,178 +24,113 @@ fun synth(type: V.Term?): Boolean {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun <reified T : V.Term> check(type: V.Term?): Boolean {
+inline fun <reified V : Value> check(type: Value?): Boolean {
   contract {
-    returns(true) implies (type is T)
+    returns(true) implies (type is V)
   }
-  return type is T
+  return type is V
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun <reified T : V.Term> match(type: V.Term?): Boolean {
+inline fun <reified V : Value> match(type: Value?): Boolean {
   contract {
-    returns(true) implies (type is T?)
+    returns(true) implies (type is V?)
   }
-  return type is T?
+  return type is V?
 }
 
 @Suppress("NAME_SHADOWING")
-fun Ctx.elaborateTerm(
-  term: S.Term,
-  type: V.Term?,
-): Result<C.Term> {
+fun Ctx.elaborate(
+  surface: Surface,
+  type: Value?,
+): Result {
   return when {
-    term is S.Term.Type &&
-    synth(type)              -> {
-      C.Term.Type of V.Term.Type
+    surface is Surface.Type &&
+    synth(type)             -> {
+      Core.Type of Value.Type
     }
 
-    term is S.Term.Func &&
-    synth(type)              -> {
-      val param = elaborateTerm(term.param, V.Term.Type)
-      val vParam = evalTerm(env0, env0, param.value)
-      val binder = elaboratePattern(term.binder, null, vParam)
-      val vBinder = evalPattern(env1, binder.value.first)
-      with(binder.value.second) {
-        val result = bind(vBinder, null).elaborateTerm(term.result, V.Term.Type)
-        C.Term.Func(binder.value.first, param.value, result.value) of V.Term.Type
-      }
+    surface is Surface.Func &&
+    synth(type)             -> {
+      val param = elaborate(surface.param, Value.Type)
+      val vParam = lazy { eval(terms, terms, param.core) }
+      val result = extend(surface.name, null, vParam, nextVar(vParam)).elaborate(surface.result, Value.Type)
+      Core.Func(surface.name, param.core, result.core) of Value.Type
     }
 
-    term is S.Term.FuncOf &&
-    synth(type)              -> {
-      error("failed to synthesize: $term")
+    surface is Surface.FuncOf &&
+    synth(type)             -> {
+      error("failed to synthesize: $surface")
     }
 
-    term is S.Term.FuncOf &&
-    check<V.Term.Func>(type) -> {
-      val binder = elaboratePattern(term.binder, type.result.binder0, type.param.value)
-      with(binder.value.second) {
-        val body = elaborateTerm(term.body, type.result.open())
-        resultOf(type) { C.Term.FuncOf(binder.value.first, body.value, it) }
-      }
+    surface is Surface.FuncOf &&
+    check<Value.Func>(type) -> {
+      val param = lazyOf(type.param.value)
+      val next = nextVar(param)
+      val body = extend(surface.name, type.result.termName, param, next).elaborate(surface.body, type.result(next))
+      of(type) { Core.FuncOf(surface.name, body.core, it) }
     }
 
-    term is S.Term.FuncOf &&
-    check<V.Term>(type)      -> {
+    surface is Surface.FuncOf &&
+    check<Value>(type)      -> {
       error("expected: func, actual: $type")
     }
 
-    term is S.Term.App &&
-    synth(type)              -> {
-      val func = elaborateTerm(term.func, null)
+    surface is Surface.App &&
+    synth(type)             -> {
+      val func = elaborate(surface.func, null)
       when (val funcType = func.type) {
-        is V.Term.Func -> {
-          val arg = elaborateTerm(term.arg, funcType.param.value)
-          val vArg = lazy { evalTerm(env0, env0, arg.value) }
+        is Value.Func -> {
+          val arg = elaborate(surface.arg, funcType.param.value)
+          val vArg = lazy { eval(terms, terms, arg.core) }
           val type = funcType.result(vArg)
-          resultOf(type) { C.Term.App(func.value, arg.value, it) }
+          of(type) { Core.App(func.core, arg.core, it) }
         }
-        else           -> error("expected: func, actual: $funcType")
+        else          -> error("expected: func, actual: $funcType")
       }
     }
 
-    term is S.Term.Unit &&
-    synth(type)              -> {
-      C.Term.Unit of V.Term.Type
+    surface is Surface.Unit &&
+    synth(type) -> {
+      Core.Unit of Value.Type
     }
 
-    term is S.Term.UnitOf &&
-    synth(type)              -> {
-      C.Term.UnitOf of V.Term.Unit
+    surface is Surface.UnitOf &&
+    synth(type) -> {
+      Core.UnitOf of Value.Unit
     }
 
-    term is S.Term.Let &&
-    match<V.Term>(type)      -> {
-      val binder = elaboratePattern(term.binder, null, null)
-      val vBinder = evalPattern(env1, binder.value.first)
-      with(binder.value.second) {
-        val init = elaborateTerm(term.init, binder.type)
-        val vInit = lazy { evalTerm(env0, env0, init.value) }
-        val body = define(vBinder, vBinder, vInit).elaborateTerm(term.body, type)
-        C.Term.Let(binder.value.first, init.value, body.value) of (type ?: body.type)
-      }
+    surface is Surface.Let &&
+    match<Value>(type)      -> {
+      val init = elaborate(surface.init, null)
+      val vInit = lazy { eval(terms, terms, init.core) }
+      val body = extend(surface.name, surface.name, lazyOf(init.type), vInit).elaborate(surface.body, type)
+      Core.Let(surface.name, init.core, body.core) of (type ?: body.type)
     }
 
-    term is S.Term.Var &&
-    synth(type)              -> {
-      val (index, type) = lookup(term.name) ?: error("var not found: ${term.name}")
-      resultOf(type) { C.Term.Var(term.name, index, it) }
+    surface is Surface.Var &&
+    synth(type)             -> {
+      val (index, type) = lookup(surface.name) ?: error("var not found: ${surface.name}")
+      of(type) { Core.Var(index, it) }
     }
 
-    term is S.Term.Anno &&
-    synth(type)              -> {
-      val type = elaborateTerm(term.type, V.Term.Type)
-      val vType = evalTerm(env0, env0, type.value)
-      elaborateTerm(term.target, vType)
+    surface is Surface.Anno &&
+    synth(type)             -> {
+      val type = elaborate(surface.type, Value.Type)
+      val vType = eval(terms, terms, type.core)
+      elaborate(surface.target, vType)
     }
 
-    check<V.Term>(type)      -> {
-      val actual = elaborateTerm(term, null)
-      if (next().convTerm(type, actual.type)) {
+    check<Value>(type)      -> {
+      val actual = elaborate(surface, null)
+      if (next().conv(type, actual.type)) {
         actual
       } else {
         error("expected: $type, actual: ${actual.type}")
       }
     }
 
-    else                     -> {
-      error("unreachable")
-    }
-  }
-}
-
-fun Ctx.elaboratePattern(
-  pattern0: S.Pattern,
-  pattern1: V.Pattern?,
-  type: V.Term?,
-): Result<Pair<C.Pattern, Ctx>> {
-  return when {
-    pattern0 is S.Pattern.UnitOf &&
-    synth(type)         -> {
-      C.Pattern.UnitOf to this of V.Term.Unit
-    }
-
-    pattern0 is S.Pattern.Var &&
-    synth(type)         -> {
-      error("failed to synthesize: $pattern0")
-    }
-
-    pattern0 is S.Pattern.Var &&
-    check<V.Term>(type) -> {
-      resultOf(type) {
-        val pattern = C.Pattern.Var(pattern0.name, it)
-        val vBinder0 = evalPattern(env1, pattern)
-        val ctx = bind(vBinder0, pattern1)
-        pattern to ctx
-      }
-    }
-
-    pattern0 is S.Pattern.Drop &&
-    synth(type)         -> {
-      error("failed to synthesize: $pattern0")
-    }
-
-    pattern0 is S.Pattern.Drop &&
-    check<V.Term>(type) -> {
-      resultOf(type) {
-        val pattern = C.Pattern.Drop(it)
-        val vBinder0 = evalPattern(env1, pattern)
-        val ctx = bind(vBinder0, pattern1)
-        pattern to ctx
-      }
-    }
-
-    check<V.Term>(type) -> {
-      val actual = elaboratePattern(pattern0, pattern1, null)
-      if (next().convTerm(type, actual.type)) {
-        actual
-      } else {
-        error("expected: $type, actual: ${actual.type}")
-      }
-    }
-
-    else                -> {
+    else                    -> {
       error("unreachable")
     }
   }
