@@ -57,9 +57,8 @@ fun Ctx.elaborateTerm(
       val param = elaborateTerm(term.param, V.Term.Type)
       val vParam = evalTerm(env0, env0, param.value)
       val binder = elaboratePattern(term.binder, null, vParam)
-      val vBinder = evalPattern(env1, binder.value.first)
       with(binder.value.second) {
-        val result = bind(vBinder, null).elaborateTerm(term.result, V.Term.Type)
+        val result = elaborateTerm(term.result, V.Term.Type)
         C.Term.Func(binder.value.first, param.value, result.value) of V.Term.Type
       }
     }
@@ -111,10 +110,10 @@ fun Ctx.elaborateTerm(
     match<V.Term>(type)      -> {
       val binder = elaboratePattern(term.binder, null, null)
       val vBinder = evalPattern(env1, binder.value.first)
-      with(binder.value.second) {
-        val init = elaborateTerm(term.init, binder.type)
-        val vInit = lazy { evalTerm(env0, env0, init.value) }
-        val body = define(vBinder, vBinder, vInit).elaborateTerm(term.body, type)
+      val init = elaborateTerm(term.init, binder.type)
+      val vInit = lazy { evalTerm(env0, env0, init.value) }
+      with(define(vBinder, vBinder, vInit)) {
+        val body = elaborateTerm(term.body, type)
         C.Term.Let(binder.value.first, init.value, body.value) of (type ?: body.type)
       }
     }
@@ -147,6 +146,7 @@ fun Ctx.elaborateTerm(
   }
 }
 
+@Suppress("NAME_SHADOWING")
 fun Ctx.elaboratePattern(
   pattern0: S.Pattern,
   pattern1: V.Pattern?,
@@ -186,6 +186,13 @@ fun Ctx.elaboratePattern(
         val ctx = bind(vBinder0, pattern1)
         pattern to ctx
       }
+    }
+
+    pattern0 is S.Pattern.Anno &&
+    synth(type)         -> {
+      val type = elaborateTerm(pattern0.type, V.Term.Type)
+      val vType = evalTerm(env0, env0, type.value)
+      elaboratePattern(pattern0.target, pattern1, vType)
     }
 
     check<V.Term>(type) -> {
