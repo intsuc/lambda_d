@@ -1,3 +1,4 @@
+import Core.Term
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.plus
 
@@ -25,59 +26,59 @@ fun Env.next(): Lvl {
 }
 
 fun Env.normalize(
-  core: Core,
-): Core {
-  return quote(next(), next(), eval(this, this, core))
+  term: Term,
+): Term {
+  return quote(next(), next(), eval(this, this, term))
 }
 
 fun eval(
   terms: Env,
   types: Env,
-  core: Core,
+  term: Term,
 ): Value {
-  return when (core) {
-    is Core.Type   -> {
+  return when (term) {
+    is Term.Type   -> {
       Value.Type
     }
 
-    is Core.Func   -> {
-      val param = lazy { eval(terms, types, core.param) }
-      val result = Closure(terms, types, core.name, null, core.result)
+    is Term.Func   -> {
+      val param = lazy { eval(terms, types, term.param) }
+      val result = Closure(terms, types, term.name, null, term.result)
       Value.Func(param, result)
     }
 
-    is Core.FuncOf -> {
-      val body = Closure(terms, types, core.name, (core.type as Core.Func).name, core.body)
-      val type = lazy { eval(types, emptyEnv(), core.type) }
+    is Term.FuncOf -> {
+      val body = Closure(terms, types, term.name, (term.type as Term.Func).name, term.body)
+      val type = lazy { eval(types, emptyEnv(), term.type) }
       Value.FuncOf(body, type)
     }
 
-    is Core.App    -> {
-      val arg = lazy { eval(terms, types, core.arg) }
-      when (val func = eval(terms, types, core.func)) {
+    is Term.App    -> {
+      val arg = lazy { eval(terms, types, term.arg) }
+      when (val func = eval(terms, types, term.func)) {
         is Value.FuncOf -> func.body(arg)
         else            -> {
-          val type = lazy { eval(types, emptyEnv(), core.type) }
+          val type = lazy { eval(types, emptyEnv(), term.type) }
           Value.App(func, arg, type)
         }
       }
     }
 
-    is Core.Unit   -> {
+    is Term.Unit   -> {
       Value.Unit
     }
 
-    is Core.UnitOf -> {
+    is Term.UnitOf -> {
       Value.UnitOf
     }
 
-    is Core.Let    -> {
-      val init = lazy { eval(terms, types, core.init) }
-      eval(terms + init, types + init, core.body)
+    is Term.Let    -> {
+      val init = lazy { eval(terms, types, term.init) }
+      eval(terms + init, types + init, term.body)
     }
 
-    is Core.Var    -> {
-      terms[core.index.toLvl(terms.next()).value].value
+    is Term.Var    -> {
+      terms[term.index.toLvl(terms.next()).value].value
     }
   }
 }
@@ -86,10 +87,10 @@ fun quote(
   terms: Lvl,
   types: Lvl,
   value: Value,
-): Core {
+): Term {
   return when (value) {
     is Value.Type   -> {
-      Core.Type
+      Term.Type
     }
 
     is Value.Func   -> {
@@ -99,7 +100,7 @@ fun quote(
         (types + if (value.result.typeName == null) 0 else 1),
         value.result(lazyOf(Value.Var(terms, value.param))),
       )
-      Core.Func(value.result.termName, param, result)
+      Term.Func(value.result.termName, param, result)
     }
 
     is Value.FuncOf -> {
@@ -111,7 +112,7 @@ fun quote(
             value.body(lazyOf(Value.Var(terms, funcType.param))),
           )
           val type = quote(types, Lvl(0), value.type.value)
-          Core.FuncOf(value.body.termName, body, type)
+          Term.FuncOf(value.body.termName, body, type)
         }
         else          -> error("expected func, got $funcType")
       }
@@ -121,21 +122,21 @@ fun quote(
       val func = quote(terms, types, value.func)
       val arg = quote(terms, types, value.arg.value)
       val type = quote(types, Lvl(0), value.type.value)
-      Core.App(func, arg, type)
+      Term.App(func, arg, type)
     }
 
     is Value.Unit   -> {
-      Core.Unit
+      Term.Unit
     }
 
     is Value.UnitOf -> {
-      Core.UnitOf
+      Term.UnitOf
     }
 
     is Value.Var    -> {
       val index = value.level.toIdx(terms)
       val type = quote(types, Lvl(0), value.type.value)
-      Core.Var(index, type)
+      Term.Var(index, type)
     }
   }
 }

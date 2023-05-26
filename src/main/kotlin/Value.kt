@@ -1,3 +1,4 @@
+import Core.Term
 import kotlinx.collections.immutable.PersistentList
 
 /**
@@ -53,5 +54,5 @@ data class Closure(
   val types: Env,
   val termName: String?,
   val typeName: String?,
-  val body: Core,
+  val body: Term,
 )
