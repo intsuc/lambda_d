@@ -157,7 +157,7 @@ val idConst: Term = run {
   val const = v(0, of = TTABA)
   let(
     "id",
-    λ("A", λ("a", a0, of = AA), of = TAA),
+    λ(λ("a", a0, of = AA), of = TAA),
     let(
       "const",
       λ("A", λ("B", λ("a", λ("b", a1, of = BA), of = ABA), of = TABA), of = TTABA),

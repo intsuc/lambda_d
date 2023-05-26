@@ -177,7 +177,7 @@ object ElaborateTest {
     val result = Ctx().elaborate(
       let(
         "id",
-        λ("A", λ("a", v("a"))) of Π("A", TypeS, Π(v("A"), v("A"))),
+        λ(λ("a", v("a"))) of Π("A", TypeS, Π(v("A"), v("A"))),
         let(
           "const",
           λ("A", λ("B", λ("a", λ("b", v("a"))))) of Π("A", TypeS, Π("B", TypeS, Π(v("A"), Π(v("B"), v("A"))))),
