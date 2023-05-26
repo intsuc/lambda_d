@@ -174,6 +174,27 @@ object ElaborateTest {
   }
 
   @Test
+  fun idConst() {
+    val result = Ctx().elaborate(
+      let(
+        "id",
+        λ("A", λ("a", v("a"))) of Π("A", TypeS, Π(v("A"), v("A"))),
+        let(
+          "const",
+          λ("A", λ("B", λ("a", λ("b", v("a"))))) of Π("A", TypeS, Π("B", TypeS, Π(v("A"), Π(v("B"), v("A"))))),
+          v("id")(Π("A", TypeS, Π("B", TypeS, Π(v("A"), Π(v("B"), v("A"))))))(v("const")),
+        )
+      ),
+      null,
+    )
+    assertEquals(idConst, result.core)
+    assertEquals(
+      Π("A", TypeC, Π("B", TypeC, Π(v(1, of = TypeC), Π(v(0, of = TypeC), v(1, of = TypeC))))),
+      quote(Lvl(0), Lvl(0), result.type),
+    )
+  }
+
+  @Test
   fun illTypedFuncOf() {
     assertThrows<IllegalStateException> {
       Ctx().elaborate(

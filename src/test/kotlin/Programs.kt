@@ -137,3 +137,29 @@ val idDesync3Partial1: Core = run {
     v(0, of = TAA),
   )
 }
+
+val idConst: Core = run {
+  val A0 = v(0, of = TypeC)
+  val A1 = v(1, of = TypeC)
+  val B0 = v(0, of = TypeC)
+  val AA = Π(A0, A0)
+  val TAA = Π("A", TypeC, AA)
+  val BA = Π(B0, A1)
+  val ABA = Π(A1, BA)
+  val TABA = Π("B", TypeC, ABA)
+  val TTABA = Π("A", TypeC, TABA)
+  val TTABATTABA = Π(TTABA, TTABA)
+  val a0 = v(0, of = A0)
+  val a1 = v(1, of = A1)
+  val id = v(1, of = TAA)
+  val const = v(0, of = TTABA)
+  let(
+    "id",
+    λ("A", λ("a", a0, of = AA), of = TAA),
+    let(
+      "const",
+      λ("A", λ("B", λ("a", λ("b", a1, of = BA), of = ABA), of = TABA), of = TTABA),
+      id(TTABA, of = TTABATTABA)(const, of = TTABA),
+    )
+  )
+}
