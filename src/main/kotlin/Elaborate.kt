@@ -119,7 +119,7 @@ fun Ctx.elaborate(
       val vFirst = lazy { env.eval(first.term) }
       val second = elaborate(term.second, type?.second(vFirst))
 
-      // We need to recreate the type here, to store and return the pair type whose second component is applied to the first component of the pair.
+      // We need to recreate the type here to store and return the pair type whose second component is applied to the first component of the pair.
       //
       //   Γ ⊢ a ⇐ A
       //   Γ ⊢ b ⇐ B(a)
@@ -156,6 +156,7 @@ fun Ctx.elaborate(
       val pair = elaborate(term.pair, null)
       when (val pairType = pair.type) {
         is V.Term.Pair -> {
+          // We inject the first projection into the pair to represent the first component of the pair, whatever form the pair is in.
           val vFirst = lazy { env.eval(C.Term.First(pair.term, next().quote(pairType.first.value))) }
           val type = pairType.second(vFirst)
           resultOf(type) { C.Term.Second(pair.term, it) }
