@@ -118,7 +118,22 @@ fun Ctx.elaborate(
       val first = elaborate(term.first, type?.first?.value)
       val vFirst = lazy { env.eval(first.term) }
       val second = elaborate(term.second, type?.second(vFirst))
-      val type = type ?: V.Term.Pair(lazyOf(first.type), Closure(env, next().quote(second.type)))
+
+      // We need to recreate the type here, to store and return the pair type whose second component is applied to the first component of the pair.
+      //
+      //   Γ ⊢ a ⇐ A
+      //   Γ ⊢ b ⇐ B(a)
+      //   ---------------------------
+      //   Γ ⊢ (a, b) ⇐ Σ(x : A). B(x)
+      //              : ΣA. B(a)
+      //
+      //   Γ ⊢ a ⇒ A
+      //   Γ ⊢ b ⇒ B
+      //   ------------------
+      //   Γ ⊢ (a, b) ⇒ ΣA. B
+      //              : ΣA. B
+      val type = V.Term.Pair(lazyOf(first.type), Closure(env, next().quote(second.type)))
+
       resultOf(type) { C.Term.PairOf(first.term, second.term, it) }
     }
 
