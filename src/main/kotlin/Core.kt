@@ -15,7 +15,6 @@ sealed class Core {
     }
 
     data class Func(
-      val name: String?,
       val param: Term,
       val result: Term,
     ) : Term() {
@@ -23,7 +22,6 @@ sealed class Core {
     }
 
     data class FuncOf(
-      val name: String?,
       val body: Term,
       override val type: Term,
     ) : Term()
@@ -43,7 +41,6 @@ sealed class Core {
     }
 
     data class Pair(
-      val name: String?,
       val first: Term,
       val second: Term,
     ) : Term() {
@@ -56,8 +53,17 @@ sealed class Core {
       override val type: Term,
     ) : Term()
 
+    data class First(
+      val pair: Term,
+      override val type: Term,
+    ) : Term()
+
+    data class Second(
+      val pair: Term,
+      override val type: Term,
+    ) : Term()
+
     data class Let(
-      val name: String?,
       val init: Term,
       val body: Term,
     ) : Term() {

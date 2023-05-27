@@ -1,5 +1,6 @@
-import Core.Term
 import kotlinx.collections.immutable.PersistentList
+import Core as C
+import Value as V
 
 sealed class Value {
   /**
@@ -57,6 +58,16 @@ sealed class Value {
       override val type: Lazy<Term>,
     ) : Term()
 
+    data class First(
+      val pair: Term,
+      override val type: Lazy<Term>,
+    ) : Term()
+
+    data class Second(
+      val pair: Term,
+      override val type: Lazy<Term>,
+    ) : Term()
+
     data class Var(
       val level: Level,
       override val type: Lazy<Term>,
@@ -64,10 +75,9 @@ sealed class Value {
   }
 }
 
-typealias Env = PersistentList<Lazy<Value.Term>>
+typealias Env = PersistentList<Lazy<V.Term>>
 
 data class Closure(
   val env: Env,
-  val name: String?,
-  val body: Term,
+  val body: C.Term,
 )

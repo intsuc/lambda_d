@@ -55,7 +55,14 @@ class Parse private constructor(
 
       'λ' -> {
         skip()
-        val name = parseWord().takeUnless { it == "_" }
+        val name = when (peek()) {
+          '.'  -> {
+            null
+          }
+          else -> {
+            parseWord()
+          }
+        }
         expect('.')
         val body = parseTerm()
         Term.FuncOf(name, body)
@@ -107,6 +114,28 @@ class Parse private constructor(
                 Term.PairOf(term, second)
               }
 
+              '.'  -> {
+                skip()
+                skipWhitespace()
+                when (peek()) {
+                  '1'  -> {
+                    skip()
+                    expect(')')
+                    Term.First(term)
+                  }
+
+                  '2'  -> {
+                    skip()
+                    expect(')')
+                    Term.Second(term)
+                  }
+
+                  else -> {
+                    error("unexpected '${peek()}'")
+                  }
+                }
+              }
+
               ':'  -> {
                 skip()
                 val type = parseTerm()
@@ -152,17 +181,13 @@ class Parse private constructor(
   private fun parseWord(): String {
     skipWhitespace()
     val start = cursor
-    while (canRead() && peek().isWordLetter()) {
+    while (canRead() && peek().isLetterOrDigit()) {
       skip()
     }
     check(start < cursor) {
       println(text.substring(cursor))
     }
     return text.substring(start, cursor)
-  }
-
-  private fun Char.isWordLetter(): Boolean {
-    return isLetterOrDigit() || this == '_'
   }
 
   private fun expect(expected: Char) {

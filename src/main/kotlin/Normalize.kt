@@ -40,12 +40,12 @@ fun Env.eval(
 
     is C.Term.Func   -> {
       val param = lazy { eval(term.param) }
-      val result = Closure(this, term.name, term.result)
+      val result = Closure(this, term.result)
       V.Term.Func(param, result)
     }
 
     is C.Term.FuncOf -> {
-      val body = Closure(this, term.name, term.body)
+      val body = Closure(this, term.body)
       val type = lazy { eval(term.type) }
       V.Term.FuncOf(body, type)
     }
@@ -53,7 +53,9 @@ fun Env.eval(
     is C.Term.App    -> {
       val arg = lazy { eval(term.arg) }
       when (val func = eval(term.func)) {
-        is V.Term.FuncOf -> func.body(arg)
+        is V.Term.FuncOf -> {
+          func.body(arg)
+        }
         else             -> {
           val type = lazy { eval(term.type) }
           V.Term.App(func, arg, type)
@@ -71,7 +73,7 @@ fun Env.eval(
 
     is C.Term.Pair   -> {
       val first = lazy { eval(term.first) }
-      val second = Closure(this, term.name, term.second)
+      val second = Closure(this, term.second)
       V.Term.Pair(first, second)
     }
 
@@ -80,6 +82,30 @@ fun Env.eval(
       val second = lazy { eval(term.second) }
       val type = lazy { eval(term.type) }
       V.Term.PairOf(first, second, type)
+    }
+
+    is C.Term.First  -> {
+      when (val pair = eval(term.pair)) {
+        is V.Term.PairOf -> {
+          pair.first.value
+        }
+        else             -> {
+          val type = lazy { eval(term.type) }
+          V.Term.First(pair, type)
+        }
+      }
+    }
+
+    is C.Term.Second -> {
+      when (val pair = eval(term.pair)) {
+        is V.Term.PairOf -> {
+          pair.second.value
+        }
+        else             -> {
+          val type = lazy { eval(term.type) }
+          V.Term.Second(pair, type)
+        }
+      }
     }
 
     is C.Term.Let    -> {
@@ -104,7 +130,7 @@ fun Level.quote(
     is V.Term.Func   -> {
       val param = quote(value.param.value)
       val result = (this + 1).quote(value.result(lazyOf(V.Term.Var(this, value.param))))
-      C.Term.Func(value.result.name, param, result)
+      C.Term.Func(param, result)
     }
 
     is V.Term.FuncOf -> {
@@ -112,7 +138,7 @@ fun Level.quote(
         is V.Term.Func -> {
           val body = (this + 1).quote(value.body(lazyOf(V.Term.Var(this, funcType.param))))
           val type = quote(value.type.value)
-          C.Term.FuncOf(value.body.name, body, type)
+          C.Term.FuncOf(body, type)
         }
         else           -> error("expected func, got $funcType")
       }
@@ -136,7 +162,7 @@ fun Level.quote(
     is V.Term.Pair   -> {
       val first = quote(value.first.value)
       val second = (this + 1).quote(value.second(lazyOf(V.Term.Var(this, value.first))))
-      C.Term.Pair(value.second.name, first, second)
+      C.Term.Pair(first, second)
     }
 
     is V.Term.PairOf -> {
@@ -144,6 +170,18 @@ fun Level.quote(
       val second = quote(value.second.value)
       val type = quote(value.type.value)
       C.Term.PairOf(first, second, type)
+    }
+
+    is V.Term.First  -> {
+      val pair = quote(value.pair)
+      val type = quote(value.type.value)
+      C.Term.First(pair, type)
+    }
+
+    is V.Term.Second -> {
+      val pair = quote(value.pair)
+      val type = quote(value.type.value)
+      C.Term.Second(pair, type)
     }
 
     is V.Term.Var    -> {
@@ -155,57 +193,64 @@ fun Level.quote(
 }
 
 fun Level.conv(
-  value1: V.Term,
-  value2: V.Term,
+  term1: V.Term,
+  term2: V.Term,
 ): Boolean {
-  return when (value1) {
+  return when (term1) {
     is V.Term.Type   -> {
-      value2 is V.Term.Type
+      term2 is V.Term.Type
     }
 
     is V.Term.Func   -> {
-      value2 is V.Term.Func &&
-      conv(value1.param.value, value2.param.value) &&
-      (value1.result.name == null) == (value2.result.name == null) &&
-      lazyOf(V.Term.Var(this, value1.param)).let { (this + 1).conv(value1.result(it), value2.result(it)) }
+      term2 is V.Term.Func &&
+      conv(term1.param.value, term2.param.value) &&
+      lazyOf(V.Term.Var(this, term1.param)).let { (this + 1).conv(term1.result(it), term2.result(it)) }
     }
 
     is V.Term.FuncOf -> {
-      value2 is V.Term.FuncOf &&
-      (value1.body.name == null) == (value2.body.name == null) &&
-      lazyOf(V.Term.Var(this, (value1.type.value as V.Term.Func).param)).let { (this + 1).conv(value1.body(it), value2.body(it)) }
+      term2 is V.Term.FuncOf &&
+      lazyOf(V.Term.Var(this, (term1.type.value as V.Term.Func).param)).let { (this + 1).conv(term1.body(it), term2.body(it)) }
     }
 
     is V.Term.App    -> {
-      value2 is V.Term.App &&
-      conv(value1.func, value2.func) &&
-      conv(value1.arg.value, value2.arg.value)
+      term2 is V.Term.App &&
+      conv(term1.func, term2.func) &&
+      conv(term1.arg.value, term2.arg.value)
     }
 
     is V.Term.Unit   -> {
-      value2 is V.Term.Unit
+      term2 is V.Term.Unit
     }
 
     is V.Term.UnitOf -> {
-      value2 is V.Term.UnitOf
+      term2 is V.Term.UnitOf
     }
 
     is V.Term.Pair   -> {
-      value2 is V.Term.Pair &&
-      conv(value1.first.value, value2.first.value) &&
-      (value1.second.name == null) == (value2.second.name == null) &&
-      lazyOf(V.Term.Var(this, value1.first)).let { (this + 1).conv(value1.second(it), value2.second(it)) }
+      term2 is V.Term.Pair &&
+      conv(term1.first.value, term2.first.value) &&
+      lazyOf(V.Term.Var(this, term1.first)).let { (this + 1).conv(term1.second(it), term2.second(it)) }
     }
 
     is V.Term.PairOf -> {
-      value2 is V.Term.PairOf &&
-      conv(value1.first.value, value2.first.value) &&
-      conv(value1.second.value, value2.second.value)
+      term2 is V.Term.PairOf &&
+      conv(term1.first.value, term2.first.value) &&
+      conv(term1.second.value, term2.second.value)
+    }
+
+    is V.Term.First  -> {
+      term2 is V.Term.First &&
+      conv(term1.pair, term2.pair)
+    }
+
+    is V.Term.Second -> {
+      term2 is V.Term.Second &&
+      conv(term1.pair, term2.pair)
     }
 
     is V.Term.Var    -> {
-      value2 is V.Term.Var &&
-      value1.level == value2.level
+      term2 is V.Term.Var &&
+      term1.level == term2.level
     }
   }
 }

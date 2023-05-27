@@ -37,6 +37,14 @@ sealed class Surface {
       val second: Term,
     ) : Term()
 
+    data class First(
+      val pair: Term,
+    ) : Term()
+
+    data class Second(
+      val pair: Term,
+    ) : Term()
+
     data class Let(
       val name: String?,
       val init: Term,

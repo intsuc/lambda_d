@@ -2,141 +2,12 @@ import Core.Term
 
 val idSync: Term = run {
   val A = v(1, TypeC)
-  val AA = Π("a", v(0, TypeC), A)
-  val TAA = Π("A", TypeC, AA)
-  val UU = Π("a", UnitC, UnitC)
-  let(
-    "id",
-    λ("A", λ("a", v(0, of = A), of = AA), of = TAA),
-    v(0, of = TAA)(UnitC, of = UU)(unitC, of = UnitC),
-  )
-}
-
-val idDesync1: Term = run {
-  val A = v(1, TypeC)
-  val AA = Π("a", v(0, TypeC), A)
-  val TAA = Π("A", TypeC, AA)
-  val UU = Π("a", UnitC, UnitC)
-  let(
-    "id",
-    λ(λ("a", v(0, of = A), of = AA), of = TAA),
-    v(0, of = TAA)(UnitC, of = UU)(unitC, of = UnitC),
-  )
-}
-
-val idDesync2: Term = run {
-  val A = v(1, TypeC)
   val AA = Π(v(0, TypeC), A)
-  val TAA = Π("A", TypeC, AA)
+  val TAA = Π(TypeC, AA)
   val UU = Π(UnitC, UnitC)
   let(
-    "id",
-    λ("A", λ("a", v(0, of = A), of = AA), of = TAA),
+    λ(λ(v(0, of = A), of = AA), of = TAA),
     v(0, of = TAA)(UnitC, of = UU)(unitC, of = UnitC),
-  )
-}
-
-val idDesync3: Term = run {
-  val A = v(1, TypeC)
-  val AA = Π(v(0, TypeC), A)
-  val TAA = Π("A", TypeC, AA)
-  val UU = Π(UnitC, UnitC)
-  let(
-    "id",
-    λ(λ("a", v(0, of = A), of = AA), of = TAA),
-    v(0, of = TAA)(UnitC, of = UU)(unitC, of = UnitC),
-  )
-}
-
-val idSyncPartial: Term = run {
-  val A = v(1, TypeC)
-  val AA = Π("a", v(0, TypeC), A)
-  val TAA = Π("A", TypeC, AA)
-  val UU = Π("a", UnitC, UnitC)
-  let(
-    "id",
-    λ("A", λ("a", v(0, of = A), of = AA), of = TAA),
-    v(0, of = TAA)(UnitC, of = UU),
-  )
-}
-
-val idDesync1Partial: Term = run {
-  val A = v(1, TypeC)
-  val AA = Π("a", v(0, TypeC), A)
-  val TAA = Π("A", TypeC, AA)
-  val UU = Π("a", UnitC, UnitC)
-  let(
-    "id",
-    λ(λ("a", v(0, of = A), of = AA), of = TAA),
-    v(0, of = TAA)(UnitC, of = UU),
-  )
-}
-
-val idDesync2Partial: Term = run {
-  val A = v(1, TypeC)
-  val AA = Π(v(0, TypeC), A)
-  val TAA = Π("A", TypeC, AA)
-  val UU = Π(UnitC, UnitC)
-  let(
-    "id",
-    λ("A", λ("a", v(0, of = A), of = AA), of = TAA),
-    v(0, of = TAA)(UnitC, of = UU),
-  )
-}
-
-val idDesync3Partial: Term = run {
-  val A = v(1, TypeC)
-  val AA = Π(v(0, TypeC), A)
-  val TAA = Π("A", TypeC, AA)
-  val UU = Π(UnitC, UnitC)
-  let(
-    "id",
-    λ(λ("a", v(0, of = A), of = AA), of = TAA),
-    v(0, of = TAA)(UnitC, of = UU),
-  )
-}
-
-val idSyncPartial1: Term = run {
-  val A = v(1, TypeC)
-  val AA = Π("a", v(0, TypeC), A)
-  val TAA = Π("A", TypeC, AA)
-  let(
-    "id",
-    λ("A", λ("a", v(0, of = A), of = AA), of = TAA),
-    v(0, of = TAA),
-  )
-}
-
-val idDesync1Partial1: Term = run {
-  val A = v(1, TypeC)
-  val AA = Π("a", v(0, TypeC), A)
-  val TAA = Π("A", TypeC, AA)
-  let(
-    "id",
-    λ(λ("a", v(0, of = A), of = AA), of = TAA),
-    v(0, of = TAA),
-  )
-}
-
-val idDesync2Partial1: Term = run {
-  val A = v(1, TypeC)
-  val AA = Π(v(0, TypeC), A)
-  val TAA = Π("A", TypeC, AA)
-  let(
-    "id",
-    λ("A", λ("a", v(0, of = A), of = AA), of = TAA),
-    v(0, of = TAA),
-  )
-}
-
-val idDesync3Partial1: Term = run {
-  val A = v(1, TypeC)
-  val AA = Π(v(0, TypeC), A)
-  val TAA = Π("A", TypeC, AA)
-  let(
-    "id",
-    λ(λ("a", v(0, of = A), of = AA), of = TAA),
-    v(0, of = TAA),
   )
 }
 
@@ -146,22 +17,20 @@ val idConst: Term = run {
   val A3 = v(3, of = TypeC)
   val B1 = v(1, of = TypeC)
   val AA = Π(A0, A1)
-  val TAA = Π("A", TypeC, AA)
+  val TAA = Π(TypeC, AA)
   val BA = Π(B1, A3)
   val ABA = Π(A1, BA)
-  val TABA = Π("B", TypeC, ABA)
-  val TTABA = Π("A", TypeC, TABA)
+  val TABA = Π(TypeC, ABA)
+  val TTABA = Π(TypeC, TABA)
   val TTABATTABA = Π(TTABA, TTABA)
   val a0 = v(0, of = A1)
   val a1 = v(1, of = A3)
   val id = v(1, of = TAA)
   val const = v(0, of = TTABA)
   let(
-    "id",
-    λ(λ("a", a0, of = AA), of = TAA),
+    λ(λ(a0, of = AA), of = TAA),
     let(
-      "const",
-      λ(λ(λ("a", λ("b", a1, of = BA), of = ABA), of = TABA), of = TTABA),
+      λ(λ(λ(λ(a1, of = BA), of = ABA), of = TABA), of = TTABA),
       id(TTABA, of = TTABATTABA)(const, of = TTABA),
     )
   )

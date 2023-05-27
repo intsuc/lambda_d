@@ -58,7 +58,7 @@ fun Ctx.elaborate(
       val param = elaborate(term.param, V.Term.Type)
       val vParam = lazy { env.eval(param.term) }
       val result = extend(term.name, vParam, nextVar(vParam)).elaborate(term.result, V.Term.Type)
-      C.Term.Func(term.name, param.term, result.term) of V.Term.Type
+      C.Term.Func(param.term, result.term) of V.Term.Type
     }
 
     term is S.Term.FuncOf &&
@@ -71,7 +71,7 @@ fun Ctx.elaborate(
       val param = lazyOf(type.param.value)
       val next = nextVar(param)
       val body = extend(term.name, param, next).elaborate(term.result, type.result(next))
-      resultOf(type) { C.Term.FuncOf(term.name, body.term, it) }
+      resultOf(type) { C.Term.FuncOf(body.term, it) }
     }
 
     term is S.Term.FuncOf &&
@@ -80,7 +80,7 @@ fun Ctx.elaborate(
     }
 
     term is S.Term.App &&
-    synth(type)          -> {
+    synth(type)              -> {
       val func = elaborate(term.func, null)
       when (val funcType = func.type) {
         is V.Term.Func -> {
@@ -89,7 +89,9 @@ fun Ctx.elaborate(
           val type = funcType.result(vArg)
           resultOf(type) { C.Term.App(func.term, arg.term, it) }
         }
-        else           -> error("expected: func, actual: $funcType")
+        else           -> {
+          error("expected: func, actual: $funcType")
+        }
       }
     }
 
@@ -99,43 +101,72 @@ fun Ctx.elaborate(
     }
 
     term is S.Term.UnitOf &&
-    synth(type)              -> {
+    synth(type)                  -> {
       C.Term.UnitOf of V.Term.Unit
     }
 
     term is S.Term.Pair &&
-    synth(type)              -> {
+    synth(type)                  -> {
       val first = elaborate(term.first, V.Term.Type)
       val vFirst = lazy { env.eval(first.term) }
       val second = extend(term.name, vFirst, nextVar(vFirst)).elaborate(term.second, V.Term.Type)
-      C.Term.Pair(term.name, first.term, second.term) of V.Term.Type
+      C.Term.Pair(first.term, second.term) of V.Term.Type
     }
 
     term is S.Term.PairOf &&
-    match<V.Term.Pair>(type) -> {
+    match<V.Term.Pair>(type)     -> {
       val first = elaborate(term.first, type?.first?.value)
       val vFirst = lazy { env.eval(first.term) }
       val second = elaborate(term.second, type?.second(vFirst))
-      val type = type ?: V.Term.Pair(lazyOf(first.type), Closure(env, null, next().quote(second.type)))
+      val type = type ?: V.Term.Pair(lazyOf(first.type), Closure(env, next().quote(second.type)))
       resultOf(type) { C.Term.PairOf(first.term, second.term, it) }
     }
 
+    term is S.Term.First &&
+    synth(type)                  -> {
+      val pair = elaborate(term.pair, null)
+      when (val pairType = pair.type) {
+        is V.Term.Pair -> {
+          val type = pairType.first.value
+          resultOf(type) { C.Term.First(pair.term, it) }
+        }
+        else           -> {
+          error("expected: pair, actual: $pairType")
+        }
+      }
+    }
+
+    term is S.Term.Second &&
+    synth(type)                  -> {
+      val pair = elaborate(term.pair, null)
+      when (val pairType = pair.type) {
+        is V.Term.Pair -> {
+          val vFirst = lazy { env.eval(C.Term.First(pair.term, next().quote(pairType.first.value))) }
+          val type = pairType.second(vFirst)
+          resultOf(type) { C.Term.Second(pair.term, it) }
+        }
+        else           -> {
+          error("expected: pair, actual: $pairType")
+        }
+      }
+    }
+
     term is S.Term.Let &&
-    match<V.Term>(type)      -> {
+    match<V.Term>(type)          -> {
       val init = elaborate(term.init, null)
       val vInit = lazy { env.eval(init.term) }
       val body = extend(term.name, lazyOf(init.type), vInit).elaborate(term.body, type)
-      C.Term.Let(term.name, init.term, body.term) of (type ?: body.type)
+      C.Term.Let(init.term, body.term) of (type ?: body.type)
     }
 
     term is S.Term.Var &&
-    synth(type)              -> {
+    synth(type)                  -> {
       val (index, type) = lookup(term.name) ?: error("var not found: ${term.name}")
       resultOf(type) { C.Term.Var(index, it) }
     }
 
     term is S.Term.Anno &&
-    synth(type)              -> {
+    synth(type)                  -> {
       val type = elaborate(term.type, V.Term.Type)
       val vType = env.eval(type.term)
       elaborate(term.target, vType)

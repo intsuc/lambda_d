@@ -76,30 +76,14 @@ fun Π(
   param: C.Term,
   result: C.Term,
 ): C.Term {
-  return C.Term.Func(null, param, result)
-}
-
-fun Π(
-  name: String,
-  param: C.Term,
-  result: C.Term,
-): C.Term {
-  return C.Term.Func(name, param, result)
+  return C.Term.Func(param, result)
 }
 
 fun λ(
   body: C.Term,
   of: C.Term,
 ): C.Term {
-  return C.Term.FuncOf(null, body, of)
-}
-
-fun λ(
-  name: String,
-  body: C.Term,
-  of: C.Term,
-): C.Term {
-  return C.Term.FuncOf(name, body, of)
+  return C.Term.FuncOf(body, of)
 }
 
 operator fun C.Term.invoke(
@@ -119,15 +103,7 @@ fun let(
   init: C.Term,
   body: C.Term,
 ): C.Term {
-  return C.Term.Let(null, init, body)
-}
-
-fun let(
-  name: String,
-  init: C.Term,
-  body: C.Term,
-): C.Term {
-  return C.Term.Let(name, init, body)
+  return C.Term.Let(init, body)
 }
 
 fun v(
