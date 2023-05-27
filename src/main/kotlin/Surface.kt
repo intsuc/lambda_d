@@ -17,7 +17,7 @@ sealed class Surface {
       val result: Term,
     ) : Term()
 
-    data class App(
+    data class Apply(
       val func: Term,
       val arg: Term,
     ) : Term()

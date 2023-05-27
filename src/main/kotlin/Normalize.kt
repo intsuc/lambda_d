@@ -50,7 +50,7 @@ fun Env.eval(
       V.Term.FuncOf(body, type)
     }
 
-    is C.Term.App    -> {
+    is C.Term.Apply -> {
       val arg = lazy { eval(term.arg) }
       when (val func = eval(term.func)) {
         is V.Term.FuncOf -> {
@@ -58,7 +58,7 @@ fun Env.eval(
         }
         else             -> {
           val type = lazy { eval(term.type) }
-          V.Term.App(func, arg, type)
+          V.Term.Apply(func, arg, type)
         }
       }
     }
@@ -144,11 +144,11 @@ fun Level.quote(
       }
     }
 
-    is V.Term.App    -> {
+    is V.Term.Apply -> {
       val func = quote(value.func)
       val arg = quote(value.arg.value)
       val type = quote(value.type.value)
-      C.Term.App(func, arg, type)
+      C.Term.Apply(func, arg, type)
     }
 
     is V.Term.Unit   -> {
@@ -212,8 +212,8 @@ fun Level.conv(
       lazyOf(V.Term.Var(this, (term1.type.value as V.Term.Func).param)).let { (this + 1).conv(term1.body(it), term2.body(it)) }
     }
 
-    is V.Term.App    -> {
-      term2 is V.Term.App &&
+    is V.Term.Apply  -> {
+      term2 is V.Term.Apply &&
       conv(term1.func, term2.func) &&
       conv(term1.arg.value, term2.arg.value)
     }

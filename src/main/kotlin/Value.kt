@@ -30,7 +30,7 @@ sealed class Value {
       override val type: Lazy<Term>,
     ) : Term()
 
-    data class App(
+    data class Apply(
       val func: Term,
       val arg: Lazy<Term>,
       override val type: Lazy<Term>,

@@ -79,7 +79,7 @@ fun Ctx.elaborate(
       error("expected: func, actual: $type")
     }
 
-    term is S.Term.App &&
+    term is S.Term.Apply &&
     synth(type)              -> {
       val func = elaborate(term.func, null)
       when (val funcType = func.type) {
@@ -87,7 +87,7 @@ fun Ctx.elaborate(
           val arg = elaborate(term.arg, funcType.param.value)
           val vArg = lazy { env.eval(arg.term) }
           val type = funcType.result(vArg)
-          resultOf(type) { C.Term.App(func.term, arg.term, it) }
+          resultOf(type) { C.Term.Apply(func.term, arg.term, it) }
         }
         else           -> {
           error("expected: func, actual: $funcType")

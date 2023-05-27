@@ -24,7 +24,7 @@ class Parse private constructor(
       skipWhitespace()
     }
     return terms.reduce { acc, term ->
-      Term.App(acc, term)
+      Term.Apply(acc, term)
     }
   }
 

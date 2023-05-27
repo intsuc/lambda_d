@@ -26,7 +26,7 @@ sealed class Core {
       override val type: Term,
     ) : Term()
 
-    data class App(
+    data class Apply(
       val func: Term,
       val arg: Term,
       override val type: Term,

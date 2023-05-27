@@ -34,7 +34,7 @@ fun λ(
 operator fun S.Term.invoke(
   arg: S.Term,
 ): S.Term {
-  return S.Term.App(this, arg)
+  return S.Term.Apply(this, arg)
 }
 
 @JvmField
@@ -121,7 +121,7 @@ operator fun C.Term.invoke(
   arg: C.Term,
   of: C.Term,
 ): C.Term {
-  return C.Term.App(this, arg, of)
+  return C.Term.Apply(this, arg, of)
 }
 
 @JvmField
