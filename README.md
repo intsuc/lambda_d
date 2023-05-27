@@ -1,6 +1,6 @@
 # $\lambda_d$
 
-[![test](https://github.com/intsuc/elaboration-kt/actions/workflows/test.yml/badge.svg)](https://github.com/intsuc/elaboration-kt/actions/workflows/test.yml)
+[![Test](https://github.com/intsuc/elaboration-kt/actions/workflows/test.yml/badge.svg)](https://github.com/intsuc/elaboration-kt/actions/workflows/test.yml)
 
 An experimental implementation of a dependently typed language $\lambda_d$ in Kotlin
 
