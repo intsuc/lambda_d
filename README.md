@@ -14,6 +14,7 @@ An experimental implementation of a dependently typed language $\lambda_d$ in Ko
 ## References
 
 - [AndrasKovacs/elaboration-zoo](https://github.com/AndrasKovacs/elaboration-zoo)
+- [jozefg/nbe-for-mltt](https://github.com/jozefg/nbe-for-mltt)
 - András Kovács. [Type theory elaboration 1: bidirectional type checking](https://youtu.be/_K5Yt-cmKcY)
 - András Kovács. [Type theory elaboration 8: comparison of De Bruijn, non-shadowing and fresh variable conventions](https://youtu.be/ZKu1oNSbZ9I)
 - Jon Sterling. [Jon Sterling, How to code your own type theory](https://youtu.be/DEj-_k2Nx6o)
