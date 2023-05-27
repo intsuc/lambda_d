@@ -4,54 +4,55 @@ import kotlin.test.assertEquals
 import Value as V
 
 object ElaborateTest {
+  private fun elaborate(text: String): Result {
+    return Ctx().elaborate(Parse(text), null)
+  }
+
   @Test
   fun idSync() {
-    val result = Ctx().elaborate(
-      let(
-        "id",
-        λ("A", λ("a", v("a"))) of Π("A", TypeS, Π("a", v("A"), v("A"))),
-        v("id")(UnitS)(unitS),
-      ),
-      null,
-    )
+    val result = elaborate("""
+      let id = (λA. λa. a : Π(A : Type). Π(a : A). A);
+      id Unit ()
+    """.trimIndent())
     assertEquals(idSync, result.term)
     assertEquals(V.Term.Unit, result.type)
   }
 
   @Test
+  fun idUncurry() {
+    val result = elaborate("""
+      let id = (λP. (P.2) : Π(P : Σ(A : Type). A). (P.1));
+      id (Unit, ())
+    """.trimIndent())
+    assertEquals(idUncurry, result.term)
+    assertEquals(V.Term.Unit, result.type)
+  }
+
+  @Test
   fun idConst() {
-    val result = Ctx().elaborate(
-      let(
-        "id",
-        λ(λ("a", v("a"))) of Π("A", TypeS, Π(v("A"), v("A"))),
-        let(
-          "const",
-          λ(λ(λ("a", λ("b", v("a"))))) of Π("A", TypeS, Π("B", TypeS, Π(v("A"), Π(v("B"), v("A"))))),
-          v("id")(Π("A", TypeS, Π("B", TypeS, Π(v("A"), Π(v("B"), v("A"))))))(v("const")),
-        )
-      ),
-      null,
-    )
+    val result = elaborate("""
+      let id = (λ. λa. a : Π(A : Type). ΠA. A);
+      let const = (λ. λ. λa. λb. a : Π(A : Type). Π(B : Type). ΠA. ΠB. A);
+      id (Π(A : Type). Π(B : Type). ΠA. ΠB. A) const
+    """.trimIndent())
     assertEquals(idConst, result.term)
   }
 
   @Test
   fun illTypedFuncOf() {
     assertThrows<IllegalStateException> {
-      Ctx().elaborate(
-        λ("x", v("x")) of TypeS,
-        null,
-      )
+      elaborate("""
+        (λx. x : Type)
+      """.trimIndent())
     }
   }
 
   @Test
   fun illTypedApp() {
     assertThrows<IllegalStateException> {
-      Ctx().elaborate(
-        TypeS(TypeS),
-        null,
-      )
+      elaborate("""
+        Type Type
+      """.trimIndent())
     }
   }
 }

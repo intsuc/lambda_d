@@ -43,6 +43,37 @@ val UnitS: S.Term = S.Term.Unit
 @JvmField
 val unitS: S.Term = S.Term.UnitOf
 
+fun Σ(
+  param: S.Term,
+  result: S.Term,
+): S.Term {
+  return S.Term.Pair(null, param, result)
+}
+
+fun Σ(
+  name: String,
+  param: S.Term,
+  result: S.Term,
+): S.Term {
+  return S.Term.Pair(name, param, result)
+}
+
+infix fun S.Term.to(
+  second: S.Term,
+): S.Term {
+  return S.Term.PairOf(this, second)
+}
+
+val S.Term.first: S.Term
+  get() {
+    return S.Term.First(this)
+  }
+
+val S.Term.second: S.Term
+  get() {
+    return S.Term.Second(this)
+  }
+
 fun let(
   init: S.Term,
   body: S.Term,
@@ -98,6 +129,32 @@ val UnitC: C.Term = C.Term.Unit
 
 @JvmField
 val unitC: C.Term = C.Term.UnitOf
+
+fun Σ(
+  param: C.Term,
+  result: C.Term,
+): C.Term {
+  return C.Term.Pair(param, result)
+}
+
+fun C.Term.to(
+  second: C.Term,
+  of: C.Term,
+): C.Term {
+  return C.Term.PairOf(this, second, of)
+}
+
+fun C.Term.first(
+  of: C.Term,
+): C.Term {
+  return C.Term.First(this, of)
+}
+
+fun C.Term.second(
+  of: C.Term,
+): C.Term {
+  return C.Term.Second(this, of)
+}
 
 fun let(
   init: C.Term,

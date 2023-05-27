@@ -11,6 +11,16 @@ val idSync: Term = run {
   )
 }
 
+val idUncurry: Term = run {
+  val TA = Σ(TypeC, v(0, of = TypeC))
+  val TAA = Π(TA, v(0, of = TA).first(of = TypeC))
+  val TU = Σ(TypeC, UnitC)
+  let(
+    λ(v(0, of = TA).second(of = v(0, of = TA).first(of = TypeC)), of = TAA),
+    v(0, of = TAA)(UnitC.to(unitC, of = TU), of = UnitC)
+  )
+}
+
 val idConst: Term = run {
   val A0 = v(0, of = TypeC)
   val A1 = v(1, of = TypeC)
