@@ -69,6 +69,19 @@ fun Env.eval(
       V.Term.UnitOf
     }
 
+    is C.Term.Pair   -> {
+      val first = lazy { eval(term.first) }
+      val second = Closure(this, term.name, term.second)
+      V.Term.Pair(first, second)
+    }
+
+    is C.Term.PairOf -> {
+      val first = lazy { eval(term.first) }
+      val second = lazy { eval(term.second) }
+      val type = lazy { eval(term.type) }
+      V.Term.PairOf(first, second, type)
+    }
+
     is C.Term.Let    -> {
       val init = lazy { eval(term.init) }
       (this + init).eval(term.body)
@@ -120,6 +133,19 @@ fun Level.quote(
       C.Term.UnitOf
     }
 
+    is V.Term.Pair   -> {
+      val first = quote(value.first.value)
+      val second = (this + 1).quote(value.second(lazyOf(V.Term.Var(this, value.first))))
+      C.Term.Pair(value.second.name, first, second)
+    }
+
+    is V.Term.PairOf -> {
+      val first = quote(value.first.value)
+      val second = quote(value.second.value)
+      val type = quote(value.type.value)
+      C.Term.PairOf(first, second, type)
+    }
+
     is V.Term.Var    -> {
       val index = value.level.toIndex(this)
       val type = quote(value.type.value)
@@ -162,6 +188,19 @@ fun Level.conv(
 
     is V.Term.UnitOf -> {
       value2 is V.Term.UnitOf
+    }
+
+    is V.Term.Pair   -> {
+      value2 is V.Term.Pair &&
+      conv(value1.first.value, value2.first.value) &&
+      (value1.second.name == null) == (value2.second.name == null) &&
+      lazyOf(V.Term.Var(this, value1.first)).let { (this + 1).conv(value1.second(it), value2.second(it)) }
+    }
+
+    is V.Term.PairOf -> {
+      value2 is V.Term.PairOf &&
+      conv(value1.first.value, value2.first.value) &&
+      conv(value1.second.value, value2.second.value)
     }
 
     is V.Term.Var    -> {

@@ -11,7 +11,7 @@ object ParseTest {
         v("id")(UnitS)(unitS),
       ),
       Parse("""
-        let id = (λA. λa. a : Π(A : Type) → Π(a : A) → A); id Unit ()
+        let id = (λA. λa. a : Π(A : Type). Π(a : A). A); id Unit ()
       """.trimIndent()),
     )
   }
@@ -25,7 +25,7 @@ object ParseTest {
         v("id")(UnitS)(unitS),
       ),
       Parse("""
-        let id = (λ_. λa. a : Π(A : Type) → ΠA → A); id Unit ()
+        let id = (λ_. λa. a : Π(A : Type). ΠA. A); id Unit ()
       """.trimIndent()),
     )
   }
@@ -43,9 +43,9 @@ object ParseTest {
         )
       ),
       Parse("""
-        let id = (λ_. λa. a : Π(A : Type) → ΠA → A);
-        let const = (λA. λB. λa. λb. a : Π(A : Type) → Π(B : Type) → ΠA → ΠB → A);
-        id (Π(A : Type) → Π(B : Type) → ΠA → ΠB → A) const
+        let id = (λ_. λa. a : Π(A : Type). ΠA. A);
+        let const = (λA. λB. λa. λb. a : Π(A : Type). Π(B : Type). ΠA. ΠB. A);
+        id (Π(A : Type). Π(B : Type). ΠA. ΠB. A) const
       """.trimIndent())
     )
   }

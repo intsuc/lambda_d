@@ -14,7 +14,7 @@ sealed class Surface {
 
     data class FuncOf(
       val name: String?,
-      val body: Term,
+      val result: Term,
     ) : Term()
 
     data class App(
@@ -25,6 +25,17 @@ sealed class Surface {
     data object Unit : Term()
 
     data object UnitOf : Term()
+
+    data class Pair(
+      val name: String?,
+      val first: Term,
+      val second: Term,
+    ) : Term()
+
+    data class PairOf(
+      val first: Term,
+      val second: Term,
+    ) : Term()
 
     data class Let(
       val name: String?,

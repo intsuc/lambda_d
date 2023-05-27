@@ -44,6 +44,19 @@ sealed class Value {
       override val type: Lazy<Term> get() = Unit.UNIT
     }
 
+    data class Pair(
+      val first: Lazy<Term>,
+      val second: Closure,
+    ) : Term() {
+      override val type: Lazy<Term> get() = Type.TYPE
+    }
+
+    data class PairOf(
+      val first: Lazy<Term>,
+      val second: Lazy<Term>,
+      override val type: Lazy<Term>,
+    ) : Term()
+
     data class Var(
       val level: Level,
       override val type: Lazy<Term>,

@@ -42,6 +42,20 @@ sealed class Core {
       override val type: Term get() = Unit
     }
 
+    data class Pair(
+      val name: String?,
+      val first: Term,
+      val second: Term,
+    ) : Term() {
+      override val type: Term get() = Type
+    }
+
+    data class PairOf(
+      val first: Term,
+      val second: Term,
+      override val type: Term,
+    ) : Term()
+
     data class Let(
       val name: String?,
       val init: Term,

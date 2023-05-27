@@ -16,8 +16,8 @@ class Parse private constructor(
     val terms = mutableListOf<Term>()
     skipWhitespace()
     while (canRead() && when (peek()) {
-        ')', '→', ';', ':' -> false
-        else               -> true
+        ')', ';', ':', ',', '.' -> false
+        else                    -> true
       }
     ) {
       terms += parseTerm0()
@@ -31,7 +31,7 @@ class Parse private constructor(
   private fun parseTerm0(): Term {
     skipWhitespace()
     return when (peek()) {
-      'Π'  -> {
+      'Π' -> {
         skip()
         when (peek()) {
           '('  -> {
@@ -40,20 +40,20 @@ class Parse private constructor(
             expect(':')
             val param = parseTerm()
             expect(')')
-            expect('→')
+            expect('.')
             val result = parseTerm()
             Term.Func(name, param, result)
           }
           else -> {
             val param = parseTerm()
-            expect('→')
+            expect('.')
             val result = parseTerm()
             Term.Func(null, param, result)
           }
         }
       }
 
-      'λ'  -> {
+      'λ' -> {
         skip()
         val name = parseWord().takeUnless { it == "_" }
         expect('.')
@@ -61,7 +61,29 @@ class Parse private constructor(
         Term.FuncOf(name, body)
       }
 
-      '('  -> {
+      'Σ' -> {
+        skip()
+        when (peek()) {
+          '('  -> {
+            skip()
+            val name = parseWord()
+            expect(':')
+            val param = parseTerm()
+            expect(')')
+            expect('.')
+            val result = parseTerm()
+            Term.Pair(name, param, result)
+          }
+          else -> {
+            val param = parseTerm()
+            expect('.')
+            val result = parseTerm()
+            Term.Pair(null, param, result)
+          }
+        }
+      }
+
+      '(' -> {
         skip()
         when (peek()) {
           ')'  -> {
@@ -71,17 +93,25 @@ class Parse private constructor(
 
           else -> {
             val term = parseTerm()
+            skipWhitespace()
             when (peek()) {
+              ')'  -> {
+                skip()
+                term
+              }
+
+              ','  -> {
+                skip()
+                val second = parseTerm()
+                expect(')')
+                Term.PairOf(term, second)
+              }
+
               ':'  -> {
                 skip()
                 val type = parseTerm()
                 expect(')')
                 Term.Anno(term, type)
-              }
-
-              ')'  -> {
-                skip()
-                term
               }
 
               else -> {
@@ -125,7 +155,9 @@ class Parse private constructor(
     while (canRead() && peek().isWordLetter()) {
       skip()
     }
-    check(start < cursor)
+    check(start < cursor) {
+      println(text.substring(cursor))
+    }
     return text.substring(start, cursor)
   }
 
