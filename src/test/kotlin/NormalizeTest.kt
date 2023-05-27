@@ -90,7 +90,7 @@ object NormalizeTest {
 
   @Test
   fun idDesync2Partial1() {
-    val A = v(0, TypeC)
+    val A = v(1, TypeC)
     val AA = Π(v(0, TypeC), A)
     val TAA = Π("A", TypeC, AA)
     assertEquals(
@@ -101,7 +101,7 @@ object NormalizeTest {
 
   @Test
   fun idDesync3Partial1() {
-    val A = v(0, TypeC)
+    val A = v(1, TypeC)
     val AA = Π(v(0, TypeC), A)
     val TAA = Π("A", TypeC, AA)
     assertEquals(

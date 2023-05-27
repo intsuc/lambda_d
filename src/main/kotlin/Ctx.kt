@@ -5,14 +5,11 @@ import Value as V
 
 /**
  * A context for elaboration.
- * [entries] and [terms] are always the same size.
- * [types] may or may not be the same size as [entries] and [terms], depending on the desynchronization of term-level and type-level bindings.
- * We only need to keep track of [types] as [Level] because it is only used to [quote] types.
+ * [entries] and [env] are always the same size.
  */
 class Ctx private constructor(
   private val entries: PersistentList<Entry>,
-  val terms: Env,
-  val types: Level,
+  val env: Env,
 ) {
   fun next(): Level {
     return Level(entries.size)
@@ -25,24 +22,14 @@ class Ctx private constructor(
   }
 
   fun extend(
-    termName: String?,
-    typeName: String?,
+    name: String?,
     type: Lazy<V.Term>,
     value: Lazy<V.Term>,
   ): Ctx {
-    return if (termName == null) {
-      Ctx(
-        entries = entries,
-        terms = terms,
-        types = types + if (typeName == null) 0 else 1,
-      )
-    } else {
-      Ctx(
-        entries = entries + Entry(termName, type.value),
-        terms = terms + value,
-        types = types + if (typeName == null) 0 else 1,
-      )
-    }
+    return Ctx(
+      entries = entries + Entry(name, type.value),
+      env = env + value,
+    )
   }
 
   fun lookup(
@@ -55,13 +42,13 @@ class Ctx private constructor(
   }
 
   private data class Entry(
-    val name: String,
+    val name: String?,
     val type: V.Term,
   )
 
   companion object {
     operator fun invoke(): Ctx {
-      return Ctx(persistentListOf(), emptyEnv(), Level(0))
+      return Ctx(persistentListOf(), emptyEnv())
     }
   }
 }
