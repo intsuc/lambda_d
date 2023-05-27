@@ -134,5 +134,5 @@ fun v(
   index: Int,
   of: C.Term,
 ): C.Term {
-  return C.Term.Var(Idx(index), of)
+  return C.Term.Var(Index(index), of)
 }

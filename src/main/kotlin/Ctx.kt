@@ -1,33 +1,34 @@
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.plus
+import Value as V
 
 /**
  * A context for elaboration.
  * [entries] and [terms] are always the same size.
  * [types] may or may not be the same size as [entries] and [terms], depending on the desynchronization of term-level and type-level bindings.
- * We only need to keep track of [types] as [Lvl] because it is only used to [quote] types.
+ * We only need to keep track of [types] as [Level] because it is only used to [quote] types.
  */
 class Ctx private constructor(
   private val entries: PersistentList<Entry>,
   val terms: Env,
-  val types: Lvl,
+  val types: Level,
 ) {
-  fun next(): Lvl {
-    return Lvl(entries.size)
+  fun next(): Level {
+    return Level(entries.size)
   }
 
   fun nextVar(
-    type: Lazy<Value>,
-  ): Lazy<Value> {
-    return lazyOf(Value.Var(next(), type))
+    type: Lazy<V.Term>,
+  ): Lazy<V.Term> {
+    return lazyOf(V.Term.Var(next(), type))
   }
 
   fun extend(
     termName: String?,
     typeName: String?,
-    type: Lazy<Value>,
-    value: Lazy<Value>,
+    type: Lazy<V.Term>,
+    value: Lazy<V.Term>,
   ): Ctx {
     return if (termName == null) {
       Ctx(
@@ -46,21 +47,21 @@ class Ctx private constructor(
 
   fun lookup(
     name: String,
-  ): Pair<Idx, Value>? {
+  ): Pair<Index, V.Term>? {
     return when (val level = entries.indexOfLast { it.name == name }) {
       -1   -> null
-      else -> Lvl(level).toIdx(next()) to entries[level].type
+      else -> Level(level).toIndex(next()) to entries[level].type
     }
   }
 
   private data class Entry(
     val name: String,
-    val type: Value,
+    val type: V.Term,
   )
 
   companion object {
     operator fun invoke(): Ctx {
-      return Ctx(persistentListOf(), emptyEnv(), Lvl(0))
+      return Ctx(persistentListOf(), emptyEnv(), Level(0))
     }
   }
 }

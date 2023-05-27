@@ -15,7 +15,7 @@ object ElaborateTest {
       null,
     )
     assertEquals(idSync, result.term)
-    assertEquals(V.Unit, result.type)
+    assertEquals(V.Term.Unit, result.type)
   }
 
   @Test
@@ -29,7 +29,7 @@ object ElaborateTest {
       null,
     )
     assertEquals(idDesync1, result.term)
-    assertEquals(V.Unit, result.type)
+    assertEquals(V.Term.Unit, result.type)
   }
 
   @Test
@@ -43,7 +43,7 @@ object ElaborateTest {
       null,
     )
     assertEquals(idDesync2, result.term)
-    assertEquals(V.Unit, result.type)
+    assertEquals(V.Term.Unit, result.type)
   }
 
   @Test
@@ -57,7 +57,7 @@ object ElaborateTest {
       null,
     )
     assertEquals(idDesync3, result.term)
-    assertEquals(V.Unit, result.type)
+    assertEquals(V.Term.Unit, result.type)
   }
 
   @Test
@@ -71,7 +71,7 @@ object ElaborateTest {
       null,
     )
     assertEquals(idSyncPartial, result.term)
-    assertEquals(Π("a", UnitC, UnitC), quote(Lvl(0), Lvl(0), result.type))
+    assertEquals(Π("a", UnitC, UnitC), quote(Level(0), Level(0), result.type))
   }
 
   @Test
@@ -85,7 +85,7 @@ object ElaborateTest {
       null,
     )
     assertEquals(idDesync1Partial, result.term)
-    assertEquals(Π("a", UnitC, UnitC), quote(Lvl(0), Lvl(0), result.type))
+    assertEquals(Π("a", UnitC, UnitC), quote(Level(0), Level(0), result.type))
   }
 
   @Test
@@ -99,7 +99,7 @@ object ElaborateTest {
       null,
     )
     assertEquals(idDesync2Partial, result.term)
-    assertEquals(Π(UnitC, UnitC), quote(Lvl(0), Lvl(0), result.type))
+    assertEquals(Π(UnitC, UnitC), quote(Level(0), Level(0), result.type))
   }
 
   @Test
@@ -113,7 +113,7 @@ object ElaborateTest {
       null,
     )
     assertEquals(idDesync3Partial, result.term)
-    assertEquals(Π(UnitC, UnitC), quote(Lvl(0), Lvl(0), result.type))
+    assertEquals(Π(UnitC, UnitC), quote(Level(0), Level(0), result.type))
   }
 
   @Test
@@ -127,7 +127,7 @@ object ElaborateTest {
       null,
     )
     assertEquals(idSyncPartial1, result.term)
-    assertEquals(Π("A", TypeC, Π("a", v(0, TypeC), v(1, TypeC))), quote(Lvl(0), Lvl(0), result.type))
+    assertEquals(Π("A", TypeC, Π("a", v(0, TypeC), v(1, TypeC))), quote(Level(0), Level(0), result.type))
   }
 
   @Test
@@ -141,7 +141,7 @@ object ElaborateTest {
       null,
     )
     assertEquals(idDesync1Partial1, result.term)
-    assertEquals(Π("A", TypeC, Π("a", v(0, TypeC), v(1, TypeC))), quote(Lvl(0), Lvl(0), result.type))
+    assertEquals(Π("A", TypeC, Π("a", v(0, TypeC), v(1, TypeC))), quote(Level(0), Level(0), result.type))
   }
 
   @Test
@@ -155,7 +155,7 @@ object ElaborateTest {
       null,
     )
     assertEquals(idDesync2Partial1, result.term)
-    assertEquals(Π("A", TypeC, Π(v(0, TypeC), v(0, TypeC))), quote(Lvl(0), Lvl(0), result.type))
+    assertEquals(Π("A", TypeC, Π(v(0, TypeC), v(0, TypeC))), quote(Level(0), Level(0), result.type))
   }
 
   @Test
@@ -169,7 +169,7 @@ object ElaborateTest {
       null,
     )
     assertEquals(idDesync3Partial1, result.term)
-    assertEquals(Π("A", TypeC, Π(v(0, TypeC), v(0, TypeC))), quote(Lvl(0), Lvl(0), result.type))
+    assertEquals(Π("A", TypeC, Π(v(0, TypeC), v(0, TypeC))), quote(Level(0), Level(0), result.type))
   }
 
   @Test
@@ -189,7 +189,7 @@ object ElaborateTest {
     assertEquals(idConst, result.term)
     assertEquals(
       Π("A", TypeC, Π("B", TypeC, Π(v(1, of = TypeC), Π(v(0, of = TypeC), v(1, of = TypeC))))),
-      quote(Lvl(0), Lvl(0), result.type),
+      quote(Level(0), Level(0), result.type),
     )
   }
 

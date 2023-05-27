@@ -1,7 +1,7 @@
 sealed class Surface {
   /**
-   * A raw surface term.
-   * [Term] may or may not be well-formed.
+   * A raw term.
+   * May or may not be well-formed.
    */
   sealed class Term {
     data object Type : Term()

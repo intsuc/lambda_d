@@ -1,10 +1,12 @@
 sealed class Core {
   /**
-   * An elaborated core term.
-   * [Term] must be well-typed.
-   * [type] is the type of this term, and can be used in subsequent compilation passes.
+   * An elaborated term.
+   * Must be well-typed.
    */
   sealed class Term {
+    /**
+     * The type of this term, and can be used in subsequent compilation passes.
+     */
     abstract val type: Term
 
     data object Type : Term() {
@@ -50,7 +52,7 @@ sealed class Core {
     }
 
     data class Var(
-      val index: Idx,
+      val index: Index,
       override val type: Term,
     ) : Term()
   }

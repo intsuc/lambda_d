@@ -1,24 +1,26 @@
+import Core
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import Core as C
 import Surface as S
+import Value as V
 
 // TODO: redundant?
 data class Result(
-  val term: C.Term,
-  val type: Value,
+  val term: Core.Term,
+  val type: V.Term,
 )
 
-infix fun C.Term.of(type: Value): Result {
+infix fun Core.Term.of(type: V.Term): Result {
   return Result(this, type)
 }
 
-inline fun Ctx.of(type: Value, build: (C.Term) -> C.Term): Result {
-  return build(quote(types, Lvl(0), type)) of type
+inline fun Ctx.resultOf(type: V.Term, build: (C.Term) -> C.Term): Result {
+  return build(quote(types, Level(0), type)) of type
 }
 
 @OptIn(ExperimentalContracts::class)
-fun synth(type: Value?): Boolean {
+fun synth(type: V.Term?): Boolean {
   contract {
     returns(true) implies (type == null)
   }
@@ -26,38 +28,38 @@ fun synth(type: Value?): Boolean {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun <reified V : Value> check(type: Value?): Boolean {
+inline fun <reified T : V.Term> check(type: V.Term?): Boolean {
   contract {
-    returns(true) implies (type is V)
+    returns(true) implies (type is T)
   }
-  return type is V
+  return type is T
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun <reified V : Value> match(type: Value?): Boolean {
+inline fun <reified T : V.Term> match(type: V.Term?): Boolean {
   contract {
-    returns(true) implies (type is V?)
+    returns(true) implies (type is T?)
   }
-  return type is V?
+  return type is T?
 }
 
 @Suppress("NAME_SHADOWING")
 fun Ctx.elaborate(
   term: S.Term,
-  type: Value?,
+  type: V.Term?,
 ): Result {
   return when {
     term is S.Term.Type &&
-    synth(type)             -> {
-      C.Term.Type of Value.Type
+    synth(type)              -> {
+      C.Term.Type of V.Term.Type
     }
 
     term is S.Term.Func &&
-    synth(type)             -> {
-      val param = elaborate(term.param, Value.Type)
+    synth(type)          -> {
+      val param = elaborate(term.param, V.Term.Type)
       val vParam = lazy { eval(terms, terms, param.term) }
-      val result = extend(term.name, null, vParam, nextVar(vParam)).elaborate(term.result, Value.Type)
-      C.Term.Func(term.name, param.term, result.term) of Value.Type
+      val result = extend(term.name, null, vParam, nextVar(vParam)).elaborate(term.result, V.Term.Type)
+      C.Term.Func(term.name, param.term, result.term) of V.Term.Type
     }
 
     term is S.Term.FuncOf &&
@@ -66,44 +68,44 @@ fun Ctx.elaborate(
     }
 
     term is S.Term.FuncOf &&
-    check<Value.Func>(type) -> {
+    check<V.Term.Func>(type) -> {
       val param = lazyOf(type.param.value)
       val next = nextVar(param)
       val body = extend(term.name, type.result.termName, param, next).elaborate(term.body, type.result(next))
-      of(type) { C.Term.FuncOf(term.name, body.term, it) }
+      resultOf(type) { C.Term.FuncOf(term.name, body.term, it) }
     }
 
     term is S.Term.FuncOf &&
-    check<Value>(type)      -> {
+    check<V.Term>(type)      -> {
       error("expected: func, actual: $type")
     }
 
     term is S.Term.App &&
-    synth(type)             -> {
+    synth(type)          -> {
       val func = elaborate(term.func, null)
       when (val funcType = func.type) {
-        is Value.Func -> {
+        is V.Term.Func -> {
           val arg = elaborate(term.arg, funcType.param.value)
           val vArg = lazy { eval(terms, terms, arg.term) }
           val type = funcType.result(vArg)
-          of(type) { C.Term.App(func.term, arg.term, it) }
+          resultOf(type) { C.Term.App(func.term, arg.term, it) }
         }
-        else          -> error("expected: func, actual: $funcType")
+        else           -> error("expected: func, actual: $funcType")
       }
     }
 
     term is S.Term.Unit &&
-    synth(type) -> {
-      C.Term.Unit of Value.Type
+    synth(type)          -> {
+      C.Term.Unit of V.Term.Type
     }
 
     term is S.Term.UnitOf &&
-    synth(type) -> {
-      C.Term.UnitOf of Value.Unit
+    synth(type)          -> {
+      C.Term.UnitOf of V.Term.Unit
     }
 
     term is S.Term.Let &&
-    match<Value>(type)      -> {
+    match<V.Term>(type)      -> {
       val init = elaborate(term.init, null)
       val vInit = lazy { eval(terms, terms, init.term) }
       val body = extend(term.name, term.name, lazyOf(init.type), vInit).elaborate(term.body, type)
@@ -111,19 +113,19 @@ fun Ctx.elaborate(
     }
 
     term is S.Term.Var &&
-    synth(type)             -> {
+    synth(type)          -> {
       val (index, type) = lookup(term.name) ?: error("var not found: ${term.name}")
-      of(type) { C.Term.Var(index, it) }
+      resultOf(type) { C.Term.Var(index, it) }
     }
 
     term is S.Term.Anno &&
-    synth(type)             -> {
-      val type = elaborate(term.type, Value.Type)
+    synth(type)          -> {
+      val type = elaborate(term.type, V.Term.Type)
       val vType = eval(terms, terms, type.term)
       elaborate(term.target, vType)
     }
 
-    check<Value>(type)      -> {
+    check<V.Term>(type)      -> {
       val actual = elaborate(term, null)
       if (next().conv(type, actual.type)) {
         actual
