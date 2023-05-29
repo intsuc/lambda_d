@@ -4,7 +4,7 @@ import Value as V
 
 sealed class Value {
   /**
-   * A semantic term.
+   * A semantic term in normal or neutral form.
    * Must be well-typed.
    */
   sealed class Term {

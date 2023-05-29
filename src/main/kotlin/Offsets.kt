@@ -15,14 +15,14 @@ value class Level(val value: Int) {
 }
 
 /**
- * Converts [this] de Bruijn index [Index] to the corresponding de Bruijn level [Level] in a context of [size].
+ * Converts [this] [Index] de Bruijn index [Index] to the corresponding de Bruijn level [Level] in an environment of [size].
  */
 fun Index.toLevel(size: Level): Level {
   return Level(size.value - this.value - 1).also { check(it.value >= 0) }
 }
 
 /**
- * Converts [this] de Bruijn level [Level] to the corresponding de Bruijn index [Index] in a context of [size].
+ * Converts [this] [Index] de Bruijn level [Level] to the corresponding de Bruijn index [Index] in an environment of [size].
  */
 fun Level.toIndex(size: Level): Index {
   return Index(size.value - this.value - 1).also { check(it.value >= 0) }

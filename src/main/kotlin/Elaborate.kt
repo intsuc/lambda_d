@@ -21,20 +21,32 @@ data class Ctx(
   )
 }
 
+/**
+ * Creates an empty context.
+ */
 fun emptyCtx(): Ctx {
   return Ctx(persistentListOf(), emptyEnv())
 }
 
+/**
+ * Returns the next level under [this] [Ctx] context.
+ */
 fun Ctx.next(): Level {
   return Level(env.size)
 }
 
+/**
+ * Returns the next variable of [type] under [this] [Ctx] context.
+ */
 fun Ctx.nextVar(
   type: Lazy<V.Term>,
 ): Lazy<V.Term> {
   return lazyOf(V.Term.Var(next(), type))
 }
 
+/**
+ * An elaboration result.
+ */
 data class Result(
   val term: C.Term,
   val type: V.Term,
@@ -72,45 +84,68 @@ inline fun <reified T : V.Term> match(type: V.Term?): Boolean {
   return type is T?
 }
 
+/**
+ * Elaborates [term] under [this] [Ctx] context.
+ * - If [type] is `null`, synthesizes the type of [term].
+ * - If [type] is not `null`, checks that [term] against [type].
+ */
 @Suppress("NAME_SHADOWING")
 fun Ctx.elaborate(
   term: S.Term,
   type: V.Term?,
 ): Result {
   return when {
-    term is S.Term.Type &&
-    synth(type)              -> {
+    /**
+     * ---------------
+     * Γ ⊢ Type ⇒ Type
+     */
+    term is S.Term.Type && synth(type)                -> {
       C.Term.Type of V.Term.Type
     }
 
-    term is S.Term.Func &&
-    synth(type)              -> {
+    /**
+     * Γ ⊢ A ⇐ Type
+     * Γ ⊢ P ⇐ A ⊣ Γ'
+     * Γ' ⊢ B ⇐ Type
+     * ----------------------
+     * Γ ⊢ Π(P : A). B ⇒ Type
+     */
+    term is S.Term.Func && synth(type)                -> {
       val param = elaborate(term.param, V.Term.Type)
       val vParam = env.eval(param.term)
       val result = extend(term.binder, vParam, nextVar(lazyOf(vParam))).elaborate(term.result, V.Term.Type)
       C.Term.Func(param.term, result.term) of V.Term.Type
     }
 
-    term is S.Term.FuncOf &&
-    synth(type)              -> {
+    term is S.Term.FuncOf && synth(type)              -> {
       error("failed to synthesize: $term")
     }
 
-    term is S.Term.FuncOf &&
-    check<V.Term.Func>(type) -> {
+    /**
+     * Γ ⊢ A ⇐ Type
+     * Γ ⊢ p ⇐ A ⊣ Γ'
+     * Γ' ⊢ b ⇐ B(p)
+     * -----------------------
+     * Γ ⊢ λp. b ⇐ Π(P : A). B
+     */
+    term is S.Term.FuncOf && check<V.Term.Func>(type) -> {
       val param = type.param.value
       val next = nextVar(lazyOf(param))
       val body = extend(term.binder, param, next).elaborate(term.result, type.result(next))
       resultOf(type) { C.Term.FuncOf(body.term, it) }
     }
 
-    term is S.Term.FuncOf &&
-    check<V.Term>(type)      -> {
+    term is S.Term.FuncOf && check<V.Term>(type)      -> {
       error("expected: func, actual: $type")
     }
 
-    term is S.Term.Apply &&
-    synth(type)              -> {
+    /**
+     * Γ ⊢ f ⇒ Π(P : A). B
+     * Γ ⊢ a ⇐ A
+     * -------------------
+     * Γ ⊢ f a ⇒ B(a)
+     */
+    term is S.Term.Apply && synth(type)               -> {
       val func = elaborate(term.func, null)
       when (val funcType = func.type) {
         is V.Term.Func -> {
@@ -125,50 +160,59 @@ fun Ctx.elaborate(
       }
     }
 
-    term is S.Term.Unit &&
-    synth(type)              -> {
+    /**
+     * ---------------
+     * Γ ⊢ Unit ⇒ Type
+     */
+    term is S.Term.Unit && synth(type)                -> {
       C.Term.Unit of V.Term.Type
     }
 
-    term is S.Term.UnitOf &&
-    synth(type)              -> {
+    /**
+     * -------------
+     * Γ ⊢ () ⇒ Unit
+     */
+    term is S.Term.UnitOf && synth(type)              -> {
       C.Term.UnitOf of V.Term.Unit
     }
 
-    term is S.Term.Pair &&
-    synth(type)              -> {
+    /**
+     * Γ ⊢ A ⇐ Type
+     * Γ ⊢ P ⇐ A ⊣ Γ'
+     * Γ' ⊢ B ⇐ Type
+     * ----------------------
+     * Γ ⊢ Σ(P : A). B ⇒ Type
+     */
+    term is S.Term.Pair && synth(type)                -> {
       val first = elaborate(term.first, V.Term.Type)
       val vFirst = env.eval(first.term)
       val second = extend(term.binder, vFirst, nextVar(lazyOf(vFirst))).elaborate(term.second, V.Term.Type)
       C.Term.Pair(first.term, second.term) of V.Term.Type
     }
 
-    term is S.Term.PairOf &&
-    match<V.Term.Pair>(type) -> {
+    /**
+     * Γ ⊢ a ⇔ A
+     * Γ ⊢ b ⇔ B(a)
+     * ---------------------------
+     * Γ ⊢ (a, b) ⇔ Σ(P : A). B(a)
+     */
+    term is S.Term.PairOf && match<V.Term.Pair>(type) -> {
       val first = elaborate(term.first, type?.first?.value)
       val vFirst = lazy { env.eval(first.term) }
       val second = elaborate(term.second, type?.second(vFirst))
 
       // We need to recreate the type here to store and return the pair type whose second component is applied to the first component of the pair.
-      //
-      //   Γ ⊢ a ⇐ A
-      //   Γ ⊢ b ⇐ B(a)
-      //   ---------------------------
-      //   Γ ⊢ (a, b) ⇐ Σ(x : A). B(x)
-      //              : ΣA. B(a)
-      //
-      //   Γ ⊢ a ⇒ A
-      //   Γ ⊢ b ⇒ B
-      //   ------------------
-      //   Γ ⊢ (a, b) ⇒ ΣA. B
-      //              : ΣA. B
       val type = V.Term.Pair(lazyOf(first.type), Closure(env, next().quote(second.type)))
 
       resultOf(type) { C.Term.PairOf(first.term, second.term, it) }
     }
 
-    term is S.Term.First &&
-    synth(type)              -> {
+    /**
+     * Γ ⊢ t ⇒ Σ(P : A). B
+     * -------------------
+     * Γ ⊢ t.1 ⇒ A
+     */
+    term is S.Term.First && synth(type)               -> {
       val pair = elaborate(term.pair, null)
       when (val pairType = pair.type) {
         is V.Term.Pair -> {
@@ -181,13 +225,18 @@ fun Ctx.elaborate(
       }
     }
 
-    term is S.Term.Second &&
-    synth(type)              -> {
+    /**
+     * Γ ⊢ t ⇒ Σ(P : A). B
+     * -------------------
+     * Γ ⊢ t.2 ⇒ B(t.1)
+     */
+    term is S.Term.Second && synth(type)              -> {
       val pair = elaborate(term.pair, null)
       when (val pairType = pair.type) {
         is V.Term.Pair -> {
           // We inject the first projection into the pair to represent the first component of the pair, whatever form the pair is in.
           val vFirst = lazy { env.eval(C.Term.First(pair.term, next().quote(pairType.first.value))) }
+
           val type = pairType.second(vFirst)
           resultOf(type) { C.Term.Second(pair.term, it) }
         }
@@ -197,39 +246,58 @@ fun Ctx.elaborate(
       }
     }
 
-    term is S.Term.Let &&
-    match<V.Term>(type)      -> {
+    /**
+     * Γ ⊢ a ⇒ A
+     * Γ ⊢ p ⇐ A ⊣ Γ'
+     * Γ' ⊢ b ⇔ B
+     * --------------------
+     * Γ ⊢ let p = a; b ⇔ B
+     */
+    term is S.Term.Let && match<V.Term>(type)         -> {
       val init = elaborate(term.init, null)
       val vInit = lazy { env.eval(init.term) }
       val body = extend(term.binder, init.type, vInit).elaborate(term.body, type)
       C.Term.Let(init.term, body.term) of (type ?: body.type)
     }
 
-    term is S.Term.Var &&
-    synth(type)              -> {
+    /**
+     * ----------------
+     * Γ, x : A ⊢ x ⇒ A
+     */
+    term is S.Term.Var && synth(type)                 -> {
       val entry = entries.lastOrNull { it.name == term.name } ?: error("var not found: ${term.name}")
       val term = next().quote(entry.term)
       val type = entry.type
       term of type
     }
 
-    term is S.Term.Anno &&
-    synth(type)              -> {
+    /**
+     * Γ ⊢ a ⇐ A
+     * -------------
+     * Γ ⊢ a : A ⇒ A
+     */
+    term is S.Term.Anno && synth(type)                -> {
       val type = elaborate(term.type, V.Term.Type)
       val vType = env.eval(type.term)
       elaborate(term.target, vType)
     }
 
-    check<V.Term>(type)      -> {
+    /**
+     * Γ ⊢ t ⇒ A
+     * A ≡ B
+     * ---------
+     * Γ ⊢ t ⇐ B
+     */
+    check<V.Term>(type)                               -> {
       val actual = elaborate(term, null)
-      if (next().conv(type, actual.type)) {
+      if (next().conv(actual.type, type)) {
         actual
       } else {
         error("expected: $type, actual: ${actual.type}")
       }
     }
 
-    else                     -> {
+    else                                              -> {
       error("unreachable")
     }
   }
@@ -248,16 +316,14 @@ private fun Ctx.extend(
     value: V.Term,
   ) {
     when {
-      pattern is S.Pattern.PairOf &&
-      check<V.Term.Pair>(type)  -> {
+      pattern is S.Pattern.PairOf && check<V.Term.Pair>(type) -> {
         val first = V.Term.First(value, type.first)
         bind(pattern.first, type.first.value, first)
         val secondType = type.second(lazyOf(first))
         bind(pattern.second, secondType, V.Term.Second(value, lazyOf(secondType)))
       }
 
-      pattern is S.Pattern.Var &&
-      check<V.Term>(type)       -> {
+      pattern is S.Pattern.Var && check<V.Term>(type)         -> {
         entries += Ctx.Entry(pattern.name, type, value)
       }
 

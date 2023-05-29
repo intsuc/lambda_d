@@ -63,6 +63,7 @@ sealed class Surface {
 
   /**
    * A raw pattern.
+   * Desugared to nested projections.
    */
   sealed class Pattern {
     data class PairOf(
