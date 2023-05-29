@@ -9,7 +9,7 @@ An experimental implementation of a dependently typed language $\lambda_d$ in Ko
 - [x] Type in type
 - [x] de Bruijn indices/levels
 - [x] Type-preserving compilation
-- [ ] Patterns
+- [x] Patterns
 
 ## References
 

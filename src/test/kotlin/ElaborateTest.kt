@@ -29,6 +29,16 @@ object ElaborateTest {
   }
 
   @Test
+  fun idUncurryPattern() {
+    val result = elaborate("""
+      let id = (λ(_, a). a : Π((A, _) : Σ(A : Type). A). A);
+      id (Unit, ())
+    """.trimIndent())
+    assertEquals(idUncurry, result.term)
+    assertEquals(V.Term.Unit, result.type)
+  }
+
+  @Test
   fun idConst() {
     val result = elaborate("""
       let id = (λ_. λa. a : Π(A : Type). ΠA. A);

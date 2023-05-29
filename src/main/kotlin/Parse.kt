@@ -175,6 +175,28 @@ class Parse private constructor(
   private fun parsePattern(): Pattern {
     skipWhitespace()
     return when (peek()) {
+      '('  -> {
+        skip()
+        when (peek()) {
+          else -> {
+            val pattern = parsePattern()
+            skipWhitespace()
+            when (peek()) {
+              ','  -> {
+                skip()
+                val second = parsePattern()
+                expect(')')
+                Pattern.PairOf(pattern, second)
+              }
+
+              else -> {
+                error("unexpected '${peek()}'")
+              }
+            }
+          }
+        }
+      }
+
       '_'  -> {
         skip()
         Pattern.Drop

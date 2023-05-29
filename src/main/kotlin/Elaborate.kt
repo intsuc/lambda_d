@@ -84,7 +84,7 @@ fun Ctx.elaborate(
     }
 
     term is S.Term.Func &&
-    synth(type)                  -> {
+    synth(type)              -> {
       val param = elaborate(term.param, V.Term.Type)
       val vParam = env.eval(param.term)
       val result = extend(term.binder, vParam, nextVar(lazyOf(vParam))).elaborate(term.result, V.Term.Type)
@@ -92,7 +92,7 @@ fun Ctx.elaborate(
     }
 
     term is S.Term.FuncOf &&
-    synth(type)                  -> {
+    synth(type)              -> {
       error("failed to synthesize: $term")
     }
 
@@ -131,12 +131,12 @@ fun Ctx.elaborate(
     }
 
     term is S.Term.UnitOf &&
-    synth(type)                  -> {
+    synth(type)              -> {
       C.Term.UnitOf of V.Term.Unit
     }
 
     term is S.Term.Pair &&
-    synth(type)                  -> {
+    synth(type)              -> {
       val first = elaborate(term.first, V.Term.Type)
       val vFirst = env.eval(first.term)
       val second = extend(term.binder, vFirst, nextVar(lazyOf(vFirst))).elaborate(term.second, V.Term.Type)
@@ -144,7 +144,7 @@ fun Ctx.elaborate(
     }
 
     term is S.Term.PairOf &&
-    match<V.Term.Pair>(type)     -> {
+    match<V.Term.Pair>(type) -> {
       val first = elaborate(term.first, type?.first?.value)
       val vFirst = lazy { env.eval(first.term) }
       val second = elaborate(term.second, type?.second(vFirst))
@@ -168,7 +168,7 @@ fun Ctx.elaborate(
     }
 
     term is S.Term.First &&
-    synth(type)                  -> {
+    synth(type)              -> {
       val pair = elaborate(term.pair, null)
       when (val pairType = pair.type) {
         is V.Term.Pair -> {
@@ -182,7 +182,7 @@ fun Ctx.elaborate(
     }
 
     term is S.Term.Second &&
-    synth(type)                  -> {
+    synth(type)              -> {
       val pair = elaborate(term.pair, null)
       when (val pairType = pair.type) {
         is V.Term.Pair -> {
@@ -198,7 +198,7 @@ fun Ctx.elaborate(
     }
 
     term is S.Term.Let &&
-    match<V.Term>(type)          -> {
+    match<V.Term>(type)      -> {
       val init = elaborate(term.init, null)
       val vInit = lazy { env.eval(init.term) }
       val body = extend(term.binder, init.type, vInit).elaborate(term.body, type)
@@ -206,7 +206,7 @@ fun Ctx.elaborate(
     }
 
     term is S.Term.Var &&
-    synth(type)                  -> {
+    synth(type)              -> {
       val entry = entries.lastOrNull { it.name == term.name } ?: error("var not found: ${term.name}")
       val term = next().quote(entry.term)
       val type = entry.type
@@ -214,7 +214,7 @@ fun Ctx.elaborate(
     }
 
     term is S.Term.Anno &&
-    synth(type)                  -> {
+    synth(type)              -> {
       val type = elaborate(term.type, V.Term.Type)
       val vType = env.eval(type.term)
       elaborate(term.target, vType)
@@ -229,7 +229,7 @@ fun Ctx.elaborate(
       }
     }
 
-    else                         -> {
+    else                     -> {
       error("unreachable")
     }
   }
@@ -240,17 +240,36 @@ private fun Ctx.extend(
   type: V.Term,
   value: Lazy<V.Term>,
 ): Ctx {
-  return when (pattern) {
-    is S.Pattern.PairOf -> {
-      TODO()
-    }
+  val entries = mutableListOf<Ctx.Entry>()
 
-    is S.Pattern.Var    -> {
-      Ctx(entries + Ctx.Entry(pattern.name, type, V.Term.Var(next(), lazyOf(type))), env + value)
-    }
+  fun bind(
+    pattern: S.Pattern,
+    type: V.Term,
+    value: V.Term,
+  ) {
+    when {
+      pattern is S.Pattern.PairOf &&
+      check<V.Term.Pair>(type)  -> {
+        val first = V.Term.First(value, type.first)
+        bind(pattern.first, type.first.value, first)
+        val secondType = type.second(lazyOf(first))
+        bind(pattern.second, secondType, V.Term.Second(value, lazyOf(secondType)))
+      }
 
-    is S.Pattern.Drop   -> {
-      Ctx(entries, env + value)
+      pattern is S.Pattern.Var &&
+      check<V.Term>(type)       -> {
+        entries += Ctx.Entry(pattern.name, type, value)
+      }
+
+      pattern is S.Pattern.Drop -> {
+      }
+
+      else                      -> {
+        TODO()
+      }
     }
   }
+  bind(pattern, type, V.Term.Var(next(), lazyOf(type)))
+
+  return Ctx(this.entries + entries, env + value)
 }
