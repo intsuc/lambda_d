@@ -66,6 +66,8 @@ sealed class Surface {
    * Desugared to nested projections.
    */
   sealed class Pattern {
+    data object UnitOf : Pattern()
+
     data class PairOf(
       val first: Pattern,
       val second: Pattern,

@@ -1,68 +1,105 @@
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import Value as V
+import Core as C
 
 object ElaborateTest {
-  private fun elaborate(text: String): Result {
-    return emptyCtx().elaborate(Parse(text), null)
+  private fun test(
+    term: C.Term?,
+    text: String,
+  ) {
+    val result = emptyCtx().elaborate(Parse(text), null)
+    term?.let { assertEquals(it, result.term) }
+  }
+
+  @Test
+  fun unit() {
+    test(
+      Programs.unit,
+      """
+        let () = ();
+        ()
+      """.trimIndent(),
+    )
+  }
+
+  @Test
+  fun pair() {
+    test(
+      Programs.pair,
+      """
+        let (a, b) = (Unit, ());
+        (a, b)
+      """.trimIndent(),
+    )
   }
 
   @Test
   fun idSync() {
-    val result = elaborate("""
-      let id = (λA. λa. a : Π(A : Type). Π(a : A). A);
-      id Unit ()
-    """.trimIndent())
-    assertEquals(idSync, result.term)
-    assertEquals(V.Term.Unit, result.type)
+    test(
+      Programs.idSync,
+      """
+        let id = (λA. λa. a : Π(A : Type). Π(a : A). A);
+        id Unit ()
+      """.trimIndent(),
+    )
   }
 
   @Test
   fun idUncurry() {
-    val result = elaborate("""
-      let id = (λP. (P.2) : Π(P : Σ(A : Type). A). (P.1));
-      id (Unit, ())
-    """.trimIndent())
-    assertEquals(idUncurry, result.term)
-    assertEquals(V.Term.Unit, result.type)
+    test(
+      Programs.idUncurry,
+      """
+        let id = (λP. (P.2) : Π(P : Σ(A : Type). A). (P.1));
+        id (Unit, ())
+      """.trimIndent(),
+    )
   }
 
   @Test
   fun idUncurryPattern() {
-    val result = elaborate("""
-      let id = (λ(_, a). a : Π((A, _) : Σ(A : Type). A). A);
-      id (Unit, ())
-    """.trimIndent())
-    assertEquals(idUncurry, result.term)
-    assertEquals(V.Term.Unit, result.type)
+    test(
+      Programs.idUncurry,
+      """
+        let id = (λ(_, a). a : Π((A, _) : Σ(A : Type). A). A);
+        id (Unit, ())
+      """.trimIndent(),
+    )
   }
 
   @Test
   fun idConst() {
-    val result = elaborate("""
-      let id = (λ_. λa. a : Π(A : Type). ΠA. A);
-      let const = (λ_. λ_. λa. λb. a : Π(A : Type). Π(B : Type). ΠA. ΠB. A);
-      id (Π(A : Type). Π(B : Type). ΠA. ΠB. A) const
-    """.trimIndent())
-    assertEquals(idConst, result.term)
+    test(
+      Programs.idConst,
+      """
+        let id = (λ_. λa. a : Π(A : Type). ΠA. A);
+        let const = (λ_. λ_. λa. λb. a : Π(A : Type). Π(B : Type). ΠA. ΠB. A);
+        id (Π(A : Type). Π(B : Type). ΠA. ΠB. A) const
+      """.trimIndent(),
+    )
   }
 
   @Test
   fun illTypedFuncOf() {
     assertThrows<IllegalStateException> {
-      elaborate("""
-        (λx. x : Type)
-      """.trimIndent())
+      test(
+        null,
+        """
+          (λx. x : Type)
+        """.trimIndent(),
+      )
     }
   }
 
   @Test
   fun illTypedApp() {
     assertThrows<IllegalStateException> {
-      elaborate("""
-        Type Type
-      """.trimIndent())
+      test(
+        null,
+        """
+          Type Type
+        """.trimIndent(),
+      )
     }
   }
 }

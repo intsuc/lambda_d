@@ -319,6 +319,8 @@ private fun Ctx.extend(
     value: V.Term,
   ) {
     when {
+      pattern is S.Pattern.UnitOf && check<V.Term.Unit>(type) -> {}
+
       pattern is S.Pattern.PairOf && check<V.Term.Pair>(type) -> {
         val first = V.Term.First(value, type.first)
         bind(pattern.first, type.first.value, first)
@@ -330,10 +332,9 @@ private fun Ctx.extend(
         entries += Ctx.Entry(pattern.name, type, value)
       }
 
-      pattern is S.Pattern.Drop -> {
-      }
+      pattern is S.Pattern.Drop                               -> {}
 
-      else                      -> {
+      else                                                    -> {
         TODO()
       }
     }

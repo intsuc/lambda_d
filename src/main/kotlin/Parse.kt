@@ -178,6 +178,11 @@ class Parse private constructor(
       '('  -> {
         skip()
         when (peek()) {
+          ')'  -> {
+            skip()
+            Pattern.UnitOf
+          }
+
           else -> {
             val pattern = parsePattern()
             skipWhitespace()
