@@ -1,3 +1,4 @@
+import Surface.Pattern
 import Surface.Term
 
 class Parse private constructor(
@@ -31,66 +32,59 @@ class Parse private constructor(
   private fun parseTerm0(): Term {
     skipWhitespace()
     return when (peek()) {
-      'Π' -> {
+      'Π'  -> {
         skip()
         when (peek()) {
           '('  -> {
             skip()
-            val name = parseWord()
+            val binder = parsePattern()
             expect(':')
             val param = parseTerm()
             expect(')')
             expect('.')
             val result = parseTerm()
-            Term.Func(name, param, result)
+            Term.Func(binder, param, result)
           }
           else -> {
             val param = parseTerm()
             expect('.')
             val result = parseTerm()
-            Term.Func(null, param, result)
+            Term.Func(Pattern.Drop, param, result)
           }
         }
       }
 
-      'λ' -> {
+      'λ'  -> {
         skip()
-        val name = when (peek()) {
-          '.'  -> {
-            null
-          }
-          else -> {
-            parseWord()
-          }
-        }
+        val binder = parsePattern()
         expect('.')
         val body = parseTerm()
-        Term.FuncOf(name, body)
+        Term.FuncOf(binder, body)
       }
 
-      'Σ' -> {
+      'Σ'  -> {
         skip()
         when (peek()) {
           '('  -> {
             skip()
-            val name = parseWord()
+            val binder = parsePattern()
             expect(':')
             val param = parseTerm()
             expect(')')
             expect('.')
             val result = parseTerm()
-            Term.Pair(name, param, result)
+            Term.Pair(binder, param, result)
           }
           else -> {
             val param = parseTerm()
             expect('.')
             val result = parseTerm()
-            Term.Pair(null, param, result)
+            Term.Pair(Pattern.Drop, param, result)
           }
         }
       }
 
-      '(' -> {
+      '('  -> {
         skip()
         when (peek()) {
           ')'  -> {
@@ -162,18 +156,33 @@ class Parse private constructor(
           }
 
           "let"  -> {
-            val name = parseWord().takeUnless { it == "_" }
+            val binder = parsePattern()
             expect('=')
             val init = parseTerm()
             expect(';')
             val body = parseTerm()
-            Term.Let(name, init, body)
+            Term.Let(binder, init, body)
           }
 
           else   -> {
             Term.Var(word)
           }
         }
+      }
+    }
+  }
+
+  private fun parsePattern(): Pattern {
+    skipWhitespace()
+    return when (peek()) {
+      '_'  -> {
+        skip()
+        Pattern.Drop
+      }
+
+      else -> {
+        val name = parseWord()
+        Pattern.Var(name)
       }
     }
   }

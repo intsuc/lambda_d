@@ -7,13 +7,13 @@ sealed class Surface {
     data object Type : Term()
 
     data class Func(
-      val name: String?,
+      val binder: Pattern,
       val param: Term,
       val result: Term,
     ) : Term()
 
     data class FuncOf(
-      val name: String?,
+      val binder: Pattern,
       val result: Term,
     ) : Term()
 
@@ -27,7 +27,7 @@ sealed class Surface {
     data object UnitOf : Term()
 
     data class Pair(
-      val name: String?,
+      val binder: Pattern,
       val first: Term,
       val second: Term,
     ) : Term()
@@ -46,7 +46,7 @@ sealed class Surface {
     ) : Term()
 
     data class Let(
-      val name: String?,
+      val binder: Pattern,
       val init: Term,
       val body: Term,
     ) : Term()
@@ -59,5 +59,21 @@ sealed class Surface {
       val target: Term,
       val type: Term,
     ) : Term()
+  }
+
+  /**
+   * A raw pattern.
+   */
+  sealed class Pattern {
+    data class PairOf(
+      val first: Pattern,
+      val second: Pattern,
+    ) : Pattern()
+
+    data class Var(
+      val name: String,
+    ) : Pattern()
+
+    data object Drop : Pattern()
   }
 }
