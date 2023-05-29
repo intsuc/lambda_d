@@ -5,7 +5,7 @@ import Value as V
 
 object ElaborateTest {
   private fun elaborate(text: String): Result {
-    return Ctx().elaborate(Parse(text), null)
+    return emptyCtx().elaborate(Parse(text), null)
   }
 
   @Test
@@ -31,8 +31,8 @@ object ElaborateTest {
   @Test
   fun idConst() {
     val result = elaborate("""
-      let id = (λ. λa. a : Π(A : Type). ΠA. A);
-      let const = (λ. λ. λa. λb. a : Π(A : Type). Π(B : Type). ΠA. ΠB. A);
+      let id = (λ_. λa. a : Π(A : Type). ΠA. A);
+      let const = (λ_. λ_. λa. λb. a : Π(A : Type). Π(B : Type). ΠA. ΠB. A);
       id (Π(A : Type). Π(B : Type). ΠA. ΠB. A) const
     """.trimIndent())
     assertEquals(idConst, result.term)

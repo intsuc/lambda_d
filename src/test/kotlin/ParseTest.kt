@@ -6,9 +6,9 @@ object ParseTest {
   fun idSync() {
     assertEquals(
       let(
-        "id",
-        λ("A", λ("a", v("a"))) of Π("A", TypeS, Π("a", v("A"), v("A"))),
-        v("id")(UnitS)(unitS),
+        -"id",
+        λ(-"A", λ(-"a", +"a")) of Π(-"A", TypeS, Π(-"a", +"A", +"A")),
+        (+"id")(UnitS)(unitS),
       ),
       Parse("""
         let id = (λA. λa. a : Π(A : Type). Π(a : A). A); id Unit ()
@@ -20,12 +20,12 @@ object ParseTest {
   fun idDesync() {
     assertEquals(
       let(
-        "id",
-        λ(λ("a", v("a"))) of Π("A", TypeS, Π(v("A"), v("A"))),
-        v("id")(UnitS)(unitS),
+        -"id",
+        λ(λ(-"a", +"a")) of Π(-"A", TypeS, Π(+"A", +"A")),
+        (+"id")(UnitS)(unitS),
       ),
       Parse("""
-        let id = (λ. λa. a : Π(A : Type). ΠA. A); id Unit ()
+        let id = (λ_. λa. a : Π(A : Type). ΠA. A); id Unit ()
       """.trimIndent()),
     )
   }
@@ -34,16 +34,16 @@ object ParseTest {
   fun idConst() {
     assertEquals(
       let(
-        "id",
-        λ(λ("a", v("a"))) of Π("A", TypeS, Π(v("A"), v("A"))),
+        -"id",
+        λ(λ(-"a", +"a")) of Π(-"A", TypeS, Π(+"A", +"A")),
         let(
-          "const",
-          λ("A", λ("B", λ("a", λ("b", v("a"))))) of Π("A", TypeS, Π("B", TypeS, Π(v("A"), Π(v("B"), v("A"))))),
-          v("id")(Π("A", TypeS, Π("B", TypeS, Π(v("A"), Π(v("B"), v("A"))))))(v("const")),
+          -"const",
+          λ(-"A", λ(-"B", λ(-"a", λ(-"b", +"a")))) of Π(-"A", TypeS, Π(-"B", TypeS, Π(+"A", Π(+"B", +"A")))),
+          (+"id")(Π(-"A", TypeS, Π(-"B", TypeS, Π(+"A", Π(+"B", +"A")))))(+"const"),
         )
       ),
       Parse("""
-        let id = (λ. λa. a : Π(A : Type). ΠA. A);
+        let id = (λ_. λa. a : Π(A : Type). ΠA. A);
         let const = (λA. λB. λa. λb. a : Π(A : Type). Π(B : Type). ΠA. ΠB. A);
         id (Π(A : Type). Π(B : Type). ΠA. ΠB. A) const
       """.trimIndent())

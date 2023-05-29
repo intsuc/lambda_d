@@ -7,28 +7,28 @@ fun Π(
   param: S.Term,
   result: S.Term,
 ): S.Term {
-  return S.Term.Func(null, param, result)
+  return S.Term.Func(S.Pattern.Drop, param, result)
 }
 
 fun Π(
-  name: String,
+  binder: S.Pattern,
   param: S.Term,
   result: S.Term,
 ): S.Term {
-  return S.Term.Func(name, param, result)
+  return S.Term.Func(binder, param, result)
 }
 
 fun λ(
   body: S.Term,
 ): S.Term {
-  return S.Term.FuncOf(null, body)
+  return S.Term.FuncOf(S.Pattern.Drop, body)
 }
 
 fun λ(
-  name: String,
+  binder: S.Pattern,
   body: S.Term,
 ): S.Term {
-  return S.Term.FuncOf(name, body)
+  return S.Term.FuncOf(binder, body)
 }
 
 operator fun S.Term.invoke(
@@ -47,15 +47,15 @@ fun Σ(
   param: S.Term,
   result: S.Term,
 ): S.Term {
-  return S.Term.Pair(null, param, result)
+  return S.Term.Pair(S.Pattern.Drop, param, result)
 }
 
 fun Σ(
-  name: String,
+  binder: S.Pattern,
   param: S.Term,
   result: S.Term,
 ): S.Term {
-  return S.Term.Pair(name, param, result)
+  return S.Term.Pair(binder, param, result)
 }
 
 infix fun S.Term.to(
@@ -78,21 +78,19 @@ fun let(
   init: S.Term,
   body: S.Term,
 ): S.Term {
-  return S.Term.Let(null, init, body)
+  return S.Term.Let(S.Pattern.Drop, init, body)
 }
 
 fun let(
-  name: String,
+  binder: S.Pattern,
   init: S.Term,
   body: S.Term,
 ): S.Term {
-  return S.Term.Let(name, init, body)
+  return S.Term.Let(binder, init, body)
 }
 
-fun v(
-  name: String,
-): S.Term {
-  return S.Term.Var(name)
+operator fun String.unaryPlus(): S.Term {
+  return S.Term.Var(this)
 }
 
 infix fun S.Term.of(
@@ -100,6 +98,18 @@ infix fun S.Term.of(
 ): S.Term {
   return S.Term.Anno(this, type)
 }
+
+infix fun S.Pattern.to(
+  second: S.Pattern,
+): S.Pattern {
+  return S.Pattern.PairOf(this, second)
+}
+
+operator fun String.unaryMinus(): S.Pattern {
+  return S.Pattern.Var(this)
+}
+
+val _p: S.Pattern = S.Pattern.Drop
 
 val TypeC: C.Term = C.Term.Type
 

@@ -9,7 +9,7 @@ sealed class Value {
    */
   sealed class Term {
     /**
-     * The type of this term, and is used to restore the type information when [quote]ing this term.
+     * The type of this term, and is used to restore the type information on [quote] this term.
      */
     abstract val type: Lazy<Term>
 

@@ -1,16 +1,46 @@
-import Core
+import kotlinx.collections.immutable.PersistentList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.plus
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import Core as C
 import Surface as S
 import Value as V
 
+/**
+ * A context for elaboration.
+ */
+data class Ctx(
+  val entries: PersistentList<Entry>,
+  val env: Env,
+) {
+  data class Entry(
+    val name: String,
+    val type: V.Term,
+    val term: V.Term,
+  )
+}
+
+fun emptyCtx(): Ctx {
+  return Ctx(persistentListOf(), emptyEnv())
+}
+
+fun Ctx.next(): Level {
+  return Level(env.size)
+}
+
+fun Ctx.nextVar(
+  type: Lazy<V.Term>,
+): Lazy<V.Term> {
+  return lazyOf(V.Term.Var(next(), type))
+}
+
 data class Result(
-  val term: Core.Term,
+  val term: C.Term,
   val type: V.Term,
 )
 
-infix fun Core.Term.of(type: V.Term): Result {
+infix fun C.Term.of(type: V.Term): Result {
   return Result(this, type)
 }
 
@@ -56,8 +86,8 @@ fun Ctx.elaborate(
     term is S.Term.Func &&
     synth(type)                  -> {
       val param = elaborate(term.param, V.Term.Type)
-      val vParam = lazy { env.eval(param.term) }
-      val result = extend(term.name, vParam, nextVar(vParam)).elaborate(term.result, V.Term.Type)
+      val vParam = env.eval(param.term)
+      val result = extend(term.binder, vParam, nextVar(lazyOf(vParam))).elaborate(term.result, V.Term.Type)
       C.Term.Func(param.term, result.term) of V.Term.Type
     }
 
@@ -68,9 +98,9 @@ fun Ctx.elaborate(
 
     term is S.Term.FuncOf &&
     check<V.Term.Func>(type) -> {
-      val param = lazyOf(type.param.value)
-      val next = nextVar(param)
-      val body = extend(term.name, param, next).elaborate(term.result, type.result(next))
+      val param = type.param.value
+      val next = nextVar(lazyOf(param))
+      val body = extend(term.binder, param, next).elaborate(term.result, type.result(next))
       resultOf(type) { C.Term.FuncOf(body.term, it) }
     }
 
@@ -108,8 +138,8 @@ fun Ctx.elaborate(
     term is S.Term.Pair &&
     synth(type)                  -> {
       val first = elaborate(term.first, V.Term.Type)
-      val vFirst = lazy { env.eval(first.term) }
-      val second = extend(term.name, vFirst, nextVar(vFirst)).elaborate(term.second, V.Term.Type)
+      val vFirst = env.eval(first.term)
+      val second = extend(term.binder, vFirst, nextVar(lazyOf(vFirst))).elaborate(term.second, V.Term.Type)
       C.Term.Pair(first.term, second.term) of V.Term.Type
     }
 
@@ -171,14 +201,16 @@ fun Ctx.elaborate(
     match<V.Term>(type)          -> {
       val init = elaborate(term.init, null)
       val vInit = lazy { env.eval(init.term) }
-      val body = extend(term.name, lazyOf(init.type), vInit).elaborate(term.body, type)
+      val body = extend(term.binder, init.type, vInit).elaborate(term.body, type)
       C.Term.Let(init.term, body.term) of (type ?: body.type)
     }
 
     term is S.Term.Var &&
     synth(type)                  -> {
-      val (index, type) = lookup(term.name) ?: error("var not found: ${term.name}")
-      resultOf(type) { C.Term.Var(index, it) }
+      val entry = entries.lastOrNull { it.name == term.name } ?: error("var not found: ${term.name}")
+      val term = next().quote(entry.term)
+      val type = entry.type
+      term of type
     }
 
     term is S.Term.Anno &&
@@ -199,6 +231,26 @@ fun Ctx.elaborate(
 
     else                         -> {
       error("unreachable")
+    }
+  }
+}
+
+private fun Ctx.extend(
+  pattern: S.Pattern,
+  type: V.Term,
+  value: Lazy<V.Term>,
+): Ctx {
+  return when (pattern) {
+    is S.Pattern.PairOf -> {
+      TODO()
+    }
+
+    is S.Pattern.Var    -> {
+      Ctx(entries + Ctx.Entry(pattern.name, type, V.Term.Var(next(), lazyOf(type))), env + value)
+    }
+
+    is S.Pattern.Drop   -> {
+      Ctx(entries, env + value)
     }
   }
 }
