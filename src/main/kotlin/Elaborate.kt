@@ -14,6 +14,9 @@ data class Ctx(
   val entries: PersistentList<Entry>,
   val env: Env,
 ) {
+  /**
+   * An entry for pattern desugaring.
+   */
   data class Entry(
     val name: String,
     val type: V.Term,
@@ -96,7 +99,7 @@ fun Ctx.elaborate(
 ): Result {
   return when {
     /**
-     * ---------------
+     * ───────────────
      * Γ ⊢ Type ⇒ Type
      */
     term is S.Term.Type && synth(type)                -> {
@@ -107,7 +110,7 @@ fun Ctx.elaborate(
      * Γ ⊢ A ⇐ Type
      * Γ ⊢ P ⇐ A ⊣ Γ'
      * Γ' ⊢ B ⇐ Type
-     * ----------------------
+     * ──────────────────────
      * Γ ⊢ Π(P : A). B ⇒ Type
      */
     term is S.Term.Func && synth(type)                -> {
@@ -125,7 +128,7 @@ fun Ctx.elaborate(
      * Γ ⊢ A ⇐ Type
      * Γ ⊢ p ⇐ A ⊣ Γ'
      * Γ' ⊢ b ⇐ B(p)
-     * -----------------------
+     * ───────────────────────
      * Γ ⊢ λp. b ⇐ Π(P : A). B
      */
     term is S.Term.FuncOf && check<V.Term.Func>(type) -> {
@@ -142,7 +145,7 @@ fun Ctx.elaborate(
     /**
      * Γ ⊢ f ⇒ Π(P : A). B
      * Γ ⊢ a ⇐ A
-     * -------------------
+     * ───────────────────
      * Γ ⊢ f a ⇒ B(a)
      */
     term is S.Term.Apply && synth(type)               -> {
@@ -161,7 +164,7 @@ fun Ctx.elaborate(
     }
 
     /**
-     * ---------------
+     * ───────────────
      * Γ ⊢ Unit ⇒ Type
      */
     term is S.Term.Unit && synth(type)                -> {
@@ -169,7 +172,7 @@ fun Ctx.elaborate(
     }
 
     /**
-     * -------------
+     * ─────────────
      * Γ ⊢ () ⇒ Unit
      */
     term is S.Term.UnitOf && synth(type)              -> {
@@ -180,7 +183,7 @@ fun Ctx.elaborate(
      * Γ ⊢ A ⇐ Type
      * Γ ⊢ P ⇐ A ⊣ Γ'
      * Γ' ⊢ B ⇐ Type
-     * ----------------------
+     * ──────────────────────
      * Γ ⊢ Σ(P : A). B ⇒ Type
      */
     term is S.Term.Pair && synth(type)                -> {
@@ -193,7 +196,7 @@ fun Ctx.elaborate(
     /**
      * Γ ⊢ a ⇔ A
      * Γ ⊢ b ⇔ B(a)
-     * ---------------------------
+     * ───────────────────────────
      * Γ ⊢ (a, b) ⇔ Σ(P : A). B(a)
      */
     term is S.Term.PairOf && match<V.Term.Pair>(type) -> {
@@ -209,7 +212,7 @@ fun Ctx.elaborate(
 
     /**
      * Γ ⊢ t ⇒ Σ(P : A). B
-     * -------------------
+     * ───────────────────
      * Γ ⊢ t.1 ⇒ A
      */
     term is S.Term.First && synth(type)               -> {
@@ -227,7 +230,7 @@ fun Ctx.elaborate(
 
     /**
      * Γ ⊢ t ⇒ Σ(P : A). B
-     * -------------------
+     * ───────────────────
      * Γ ⊢ t.2 ⇒ B(t.1)
      */
     term is S.Term.Second && synth(type)              -> {
@@ -250,7 +253,7 @@ fun Ctx.elaborate(
      * Γ ⊢ a ⇒ A
      * Γ ⊢ p ⇐ A ⊣ Γ'
      * Γ' ⊢ b ⇔ B
-     * --------------------
+     * ────────────────────
      * Γ ⊢ let p = a; b ⇔ B
      */
     term is S.Term.Let && match<V.Term>(type)         -> {
@@ -261,7 +264,7 @@ fun Ctx.elaborate(
     }
 
     /**
-     * ----------------
+     * ────────────────
      * Γ, x : A ⊢ x ⇒ A
      */
     term is S.Term.Var && synth(type)                 -> {
@@ -273,7 +276,7 @@ fun Ctx.elaborate(
 
     /**
      * Γ ⊢ a ⇐ A
-     * -------------
+     * ─────────────
      * Γ ⊢ a : A ⇒ A
      */
     term is S.Term.Anno && synth(type)                -> {
@@ -285,7 +288,7 @@ fun Ctx.elaborate(
     /**
      * Γ ⊢ t ⇒ A
      * A ≡ B
-     * ---------
+     * ─────────
      * Γ ⊢ t ⇐ B
      */
     check<V.Term>(type)                               -> {
