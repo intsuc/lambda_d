@@ -24,6 +24,11 @@ object NormalizeTest {
   }
 
   @Test
+  fun pairNested() {
+    test(UnitC, Programs.pairNested)
+  }
+
+  @Test
   fun idSync() {
     test(unitC, Programs.idSync)
   }

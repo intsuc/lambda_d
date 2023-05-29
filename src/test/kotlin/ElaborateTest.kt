@@ -35,6 +35,17 @@ object ElaborateTest {
   }
 
   @Test
+  fun pairNested() {
+    test(
+      Programs.pairNested,
+      """
+        let (_, (b, _)) = (Type, (Unit, ()));
+        b
+      """.trimIndent(),
+    )
+  }
+
+  @Test
   fun idSync() {
     test(
       Programs.idSync,

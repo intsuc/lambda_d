@@ -17,6 +17,15 @@ object Programs {
     )
   }
 
+  val pairNested: Term = run {
+    val TU = Σ(TypeC, UnitC)
+    val TTU = Σ(TypeC, TU)
+    let(
+      TypeC.to(UnitC.to(unitC, of = TU), of = TTU),
+      v(0, of = TTU).second(of = TU).first(of = TypeC),
+    )
+  }
+
   val idSync: Term = run {
     val A = v(1, TypeC)
     val AA = Π(v(0, TypeC), A)
