@@ -42,8 +42,8 @@ fun Ctx.next(): Level {
  */
 fun Ctx.nextVar(
   type: Lazy<V.Term>,
-): V.Term {
-  return V.Term.Var(next(), type)
+): Lazy<V.Term> {
+  return next().nextVar(type)
 }
 
 /**
@@ -115,7 +115,7 @@ fun Ctx.elaborate(
     term is S.Term.Func && synth(type)                -> {
       val param = elaborate(term.param, V.Term.Type)
       val vParam = env.eval(param.term)
-      val result = extend(term.binder, vParam, lazyOf(nextVar(lazyOf(vParam)))).elaborate(term.result, V.Term.Type)
+      val result = extend(term.binder, vParam, nextVar(lazyOf(vParam))).elaborate(term.result, V.Term.Type)
       C.Term.Func(param.term, result.term) of V.Term.Type
     }
 
@@ -132,7 +132,7 @@ fun Ctx.elaborate(
      */
     term is S.Term.FuncOf && check<V.Term.Func>(type) -> {
       val param = type.param.value
-      val next = lazyOf(nextVar(lazyOf(param)))
+      val next = nextVar(lazyOf(param))
       val body = extend(term.binder, param, next).elaborate(term.result, type.result(next))
       resultOf(type) { C.Term.FuncOf(body.term, it) }
     }
@@ -188,7 +188,7 @@ fun Ctx.elaborate(
     term is S.Term.Pair && synth(type)                -> {
       val first = elaborate(term.first, V.Term.Type)
       val vFirst = env.eval(first.term)
-      val second = extend(term.binder, vFirst, lazyOf(nextVar(lazyOf(vFirst)))).elaborate(term.second, V.Term.Type)
+      val second = extend(term.binder, vFirst, nextVar(lazyOf(vFirst))).elaborate(term.second, V.Term.Type)
       C.Term.Pair(first.term, second.term) of V.Term.Type
     }
 

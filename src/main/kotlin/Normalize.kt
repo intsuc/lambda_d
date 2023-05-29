@@ -34,6 +34,15 @@ fun Env.next(): Level {
 }
 
 /**
+ * Returns the next variable of [type] under the context of [this] [Level] size.
+ */
+fun Level.nextVar(
+  type: Lazy<V.Term>,
+): Lazy<V.Term> {
+  return lazyOf(V.Term.Var(this, type))
+}
+
+/**
  * Normalizes [term] under [this] [Env] environment.
  */
 fun Env.normalize(
@@ -147,14 +156,14 @@ fun Level.quote(
 
     is V.Term.Func   -> {
       val param = quote(term.param.value)
-      val result = (this + 1).quote(term.result(lazyOf(V.Term.Var(this, term.param))))
+      val result = (this + 1).quote(term.result(nextVar(term.param)))
       C.Term.Func(param, result)
     }
 
     is V.Term.FuncOf -> {
       when (val funcType = term.type.value) {
         is V.Term.Func -> {
-          val body = (this + 1).quote(term.body(lazyOf(V.Term.Var(this, funcType.param))))
+          val body = (this + 1).quote(term.body(nextVar(funcType.param)))
           val type = quote(term.type.value)
           C.Term.FuncOf(body, type)
         }
@@ -179,7 +188,7 @@ fun Level.quote(
 
     is V.Term.Pair   -> {
       val first = quote(term.first.value)
-      val second = (this + 1).quote(term.second(lazyOf(V.Term.Var(this, term.first))))
+      val second = (this + 1).quote(term.second(nextVar(term.first)))
       C.Term.Pair(first, second)
     }
 
@@ -225,12 +234,12 @@ fun Level.conv(
     is V.Term.Func   -> {
       term2 is V.Term.Func &&
       conv(term1.param.value, term2.param.value) &&
-      lazyOf(V.Term.Var(this, term1.param)).let { (this + 1).conv(term1.result(it), term2.result(it)) }
+      nextVar(term1.param).let { (this + 1).conv(term1.result(it), term2.result(it)) }
     }
 
     is V.Term.FuncOf -> {
       term2 is V.Term.FuncOf &&
-      lazyOf(V.Term.Var(this, (term1.type.value as V.Term.Func).param)).let { (this + 1).conv(term1.body(it), term2.body(it)) }
+      nextVar((term1.type.value as V.Term.Func).param).let { (this + 1).conv(term1.body(it), term2.body(it)) }
     }
 
     is V.Term.Apply  -> {
@@ -250,7 +259,7 @@ fun Level.conv(
     is V.Term.Pair   -> {
       term2 is V.Term.Pair &&
       conv(term1.first.value, term2.first.value) &&
-      lazyOf(V.Term.Var(this, term1.first)).let { (this + 1).conv(term1.second(it), term2.second(it)) }
+      nextVar(term1.first).let { (this + 1).conv(term1.second(it), term2.second(it)) }
     }
 
     is V.Term.PairOf -> {
