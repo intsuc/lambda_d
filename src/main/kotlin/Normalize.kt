@@ -23,20 +23,20 @@ fun emptyEnv(): Env {
 operator fun Closure.invoke(
   arg: Lazy<V.Term>,
 ): V.Term {
-  return (env + arg).eval(body)
+  return (env + arg).evalTerm(body)
 }
 
 /**
  * Returns the next level of [this] [Env] environment.
  */
-fun Env.next(): Level {
-  return Level(size)
+fun Env.next(): Lvl {
+  return Lvl(size)
 }
 
 /**
- * Returns the next variable of [type] under the context of [this] [Level] size.
+ * Returns the next variable of [type] under the context of [this] [Lvl] size.
  */
-fun Level.nextVar(
+fun Lvl.nextVar(
   type: Lazy<V.Term>,
 ): Lazy<V.Term> {
   return lazyOf(V.Term.Var(this, type))
@@ -45,16 +45,16 @@ fun Level.nextVar(
 /**
  * Normalizes [term] under [this] [Env] environment.
  */
-fun Env.normalize(
+fun Env.normalizeTerm(
   term: C.Term,
 ): C.Term {
-  return next().quote(eval(term))
+  return next().quoteTerm(evalTerm(term))
 }
 
 /**
  * Evaluates [term] under [this] [Env] environment.
  */
-fun Env.eval(
+fun Env.evalTerm(
   term: C.Term,
 ): V.Term {
   return when (term) {
@@ -63,25 +63,26 @@ fun Env.eval(
     }
 
     is C.Term.Func   -> {
-      val param = lazy { eval(term.param) }
+      val param = lazy { evalTerm(term.param) }
       val result = Closure(this, term.result)
       V.Term.Func(param, result)
     }
 
     is C.Term.FuncOf -> {
+      val binder = term.binder
       val body = Closure(this, term.body)
-      val type = lazy { eval(term.type) }
-      V.Term.FuncOf(body, type)
+      val type = lazy { evalTerm(term.type) }
+      V.Term.FuncOf(binder, body, type)
     }
 
     is C.Term.Apply  -> {
-      val arg = lazy { eval(term.arg) }
-      when (val func = eval(term.func)) {
+      val arg = lazy { evalTerm(term.arg) }
+      when (val func = evalTerm(term.func)) {
         is V.Term.FuncOf -> {
           func.body(arg)
         }
         else             -> {
-          val type = lazy { eval(term.type) }
+          val type = lazy { evalTerm(term.type) }
           V.Term.Apply(func, arg, type)
         }
       }
@@ -96,45 +97,45 @@ fun Env.eval(
     }
 
     is C.Term.Pair   -> {
-      val first = lazy { eval(term.first) }
+      val first = lazy { evalTerm(term.first) }
       val second = Closure(this, term.second)
       V.Term.Pair(first, second)
     }
 
     is C.Term.PairOf -> {
-      val first = lazy { eval(term.first) }
-      val second = lazy { eval(term.second) }
-      val type = lazy { eval(term.type) }
+      val first = lazy { evalTerm(term.first) }
+      val second = lazy { evalTerm(term.second) }
+      val type = lazy { evalTerm(term.type) }
       V.Term.PairOf(first, second, type)
     }
 
     is C.Term.First  -> {
-      when (val pair = eval(term.pair)) {
+      when (val pair = evalTerm(term.pair)) {
         is V.Term.PairOf -> {
           pair.first.value
         }
         else             -> {
-          val type = lazy { eval(term.type) }
+          val type = lazy { evalTerm(term.type) }
           V.Term.First(pair, type)
         }
       }
     }
 
     is C.Term.Second -> {
-      when (val pair = eval(term.pair)) {
+      when (val pair = evalTerm(term.pair)) {
         is V.Term.PairOf -> {
           pair.second.value
         }
         else             -> {
-          val type = lazy { eval(term.type) }
+          val type = lazy { evalTerm(term.type) }
           V.Term.Second(pair, type)
         }
       }
     }
 
     is C.Term.Let    -> {
-      val init = lazy { eval(term.init) }
-      (this + init).eval(term.body)
+      val init = lazy { evalTerm(term.init) }
+      (this + init).evalTerm(term.body)
     }
 
     is C.Term.Var    -> {
@@ -144,9 +145,9 @@ fun Env.eval(
 }
 
 /**
- * Quotes [term] under the environment of [this] [Level] size.
+ * Quotes [term] under the environment of [this] [Lvl] size.
  */
-fun Level.quote(
+fun Lvl.quoteTerm(
   term: V.Term,
 ): C.Term {
   return when (term) {
@@ -155,26 +156,27 @@ fun Level.quote(
     }
 
     is V.Term.Func   -> {
-      val param = quote(term.param.value)
-      val result = (this + 1).quote(term.result(nextVar(term.param)))
+      val param = quoteTerm(term.param.value)
+      val result = (this + 1).quoteTerm(term.result(nextVar(term.param)))
       C.Term.Func(param, result)
     }
 
     is V.Term.FuncOf -> {
       when (val funcType = term.type.value) {
         is V.Term.Func -> {
-          val body = (this + 1).quote(term.body(nextVar(funcType.param)))
-          val type = quote(term.type.value)
-          C.Term.FuncOf(body, type)
+          val binder = term.binder
+          val body = (this + 1).quoteTerm(term.body(nextVar(funcType.param)))
+          val type = quoteTerm(term.type.value)
+          C.Term.FuncOf(binder, body, type)
         }
         else           -> error("expected func, got $funcType")
       }
     }
 
     is V.Term.Apply  -> {
-      val func = quote(term.func)
-      val arg = quote(term.arg.value)
-      val type = quote(term.type.value)
+      val func = quoteTerm(term.func)
+      val arg = quoteTerm(term.arg.value)
+      val type = quoteTerm(term.type.value)
       C.Term.Apply(func, arg, type)
     }
 
@@ -187,42 +189,42 @@ fun Level.quote(
     }
 
     is V.Term.Pair   -> {
-      val first = quote(term.first.value)
-      val second = (this + 1).quote(term.second(nextVar(term.first)))
+      val first = quoteTerm(term.first.value)
+      val second = (this + 1).quoteTerm(term.second(nextVar(term.first)))
       C.Term.Pair(first, second)
     }
 
     is V.Term.PairOf -> {
-      val first = quote(term.first.value)
-      val second = quote(term.second.value)
-      val type = quote(term.type.value)
+      val first = quoteTerm(term.first.value)
+      val second = quoteTerm(term.second.value)
+      val type = quoteTerm(term.type.value)
       C.Term.PairOf(first, second, type)
     }
 
     is V.Term.First  -> {
-      val pair = quote(term.pair)
-      val type = quote(term.type.value)
+      val pair = quoteTerm(term.pair)
+      val type = quoteTerm(term.type.value)
       C.Term.First(pair, type)
     }
 
     is V.Term.Second -> {
-      val pair = quote(term.pair)
-      val type = quote(term.type.value)
+      val pair = quoteTerm(term.pair)
+      val type = quoteTerm(term.type.value)
       C.Term.Second(pair, type)
     }
 
     is V.Term.Var    -> {
       val index = term.level.toIndex(this)
-      val type = quote(term.type.value)
+      val type = quoteTerm(term.type.value)
       C.Term.Var(index, type)
     }
   }
 }
 
 /**
- * Checks if [term1] and [term2] are β-convertible under the environment of [this] [Level] size.
+ * Checks if [term1] and [term2] are β-convertible under the environment of [this] [Lvl] size.
  */
-fun Level.conv(
+fun Lvl.conv(
   term1: V.Term,
   term2: V.Term,
 ): Boolean {

@@ -9,7 +9,7 @@ object NormalizeTest {
   ) {
     assertEquals(
       expected,
-      emptyEnv().normalize(actual),
+      emptyEnv().normalizeTerm(actual),
     )
   }
 

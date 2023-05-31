@@ -33,8 +33,8 @@ fun emptyCtx(): Ctx {
 /**
  * Returns the next level under [this] [Ctx] context.
  */
-fun Ctx.next(): Level {
-  return Level(env.size)
+fun Ctx.next(): Lvl {
+  return Lvl(env.size)
 }
 
 /**
@@ -49,17 +49,17 @@ fun Ctx.nextVar(
 /**
  * An elaboration result.
  */
-data class Result(
-  val term: C.Term,
+data class Result<E>(
+  val element: E,
   val type: V.Term,
 )
 
-infix fun C.Term.of(type: V.Term): Result {
+infix fun <E> E.of(type: V.Term): Result<E> {
   return Result(this, type)
 }
 
-inline fun Ctx.resultOf(type: V.Term, build: (C.Term) -> C.Term): Result {
-  return build(next().quote(type)) of type
+inline fun <E> Ctx.resultOf(type: V.Term, build: (C.Term) -> E): Result<E> {
+  return build(next().quoteTerm(type)) of type
 }
 
 @OptIn(ExperimentalContracts::class)
@@ -92,10 +92,10 @@ inline fun <reified T : V.Term> match(type: V.Term?): Boolean {
  * - If [type] is not `null`, checks that [term] against [type].
  */
 @Suppress("NAME_SHADOWING")
-fun Ctx.elaborate(
+fun Ctx.elaborateTerm(
   term: S.Term,
   type: V.Term?,
-): Result {
+): Result<C.Term> {
   return when {
     /**
      * ───────────────
@@ -113,10 +113,11 @@ fun Ctx.elaborate(
      * Γ ⊢ Π(P : A). B ⇒ Type
      */
     term is S.Term.Func && synth(type)                -> {
-      val param = elaborate(term.param, V.Term.Type)
-      val vParam = env.eval(param.term)
-      val result = extend(term.binder, vParam, nextVar(lazyOf(vParam))).elaborate(term.result, V.Term.Type)
-      C.Term.Func(param.term, result.term) of V.Term.Type
+      val param = elaborateTerm(term.param, V.Term.Type)
+      val vParam = env.evalTerm(param.element)
+      val (ctx, _) = extend(term.binder, vParam, nextVar(lazyOf(vParam)))
+      val result = ctx.elaborateTerm(term.result, V.Term.Type)
+      C.Term.Func(param.element, result.element) of V.Term.Type
     }
 
     term is S.Term.FuncOf && synth(type)              -> {
@@ -133,8 +134,9 @@ fun Ctx.elaborate(
     term is S.Term.FuncOf && check<V.Term.Func>(type) -> {
       val param = type.param.value
       val next = nextVar(lazyOf(param))
-      val body = extend(term.binder, param, next).elaborate(term.result, type.result(next))
-      resultOf(type) { C.Term.FuncOf(body.term, it) }
+      val (ctx, binder) = extend(term.binder, param, next)
+      val body = ctx.elaborateTerm(term.result, type.result(next))
+      resultOf(type) { C.Term.FuncOf(binder, body.element, it) }
     }
 
     term is S.Term.FuncOf && check<V.Term>(type)      -> {
@@ -148,13 +150,13 @@ fun Ctx.elaborate(
      * Γ ⊢ f a ⇒ B(a)
      */
     term is S.Term.Apply && synth(type)               -> {
-      val func = elaborate(term.func, null)
+      val func = elaborateTerm(term.func, null)
       when (val funcType = func.type) {
         is V.Term.Func -> {
-          val arg = elaborate(term.arg, funcType.param.value)
-          val vArg = lazy { env.eval(arg.term) }
+          val arg = elaborateTerm(term.arg, funcType.param.value)
+          val vArg = lazy { env.evalTerm(arg.element) }
           val type = funcType.result(vArg)
-          resultOf(type) { C.Term.Apply(func.term, arg.term, it) }
+          resultOf(type) { C.Term.Apply(func.element, arg.element, it) }
         }
         else           -> {
           error("expected: func, actual: $funcType")
@@ -186,10 +188,11 @@ fun Ctx.elaborate(
      * Γ ⊢ Σ(P : A). B ⇒ Type
      */
     term is S.Term.Pair && synth(type)                -> {
-      val first = elaborate(term.first, V.Term.Type)
-      val vFirst = env.eval(first.term)
-      val second = extend(term.binder, vFirst, nextVar(lazyOf(vFirst))).elaborate(term.second, V.Term.Type)
-      C.Term.Pair(first.term, second.term) of V.Term.Type
+      val first = elaborateTerm(term.first, V.Term.Type)
+      val vFirst = env.evalTerm(first.element)
+      val (ctx, _) = extend(term.binder, vFirst, nextVar(lazyOf(vFirst)))
+      val second = ctx.elaborateTerm(term.second, V.Term.Type)
+      C.Term.Pair(first.element, second.element) of V.Term.Type
     }
 
     /**
@@ -199,14 +202,14 @@ fun Ctx.elaborate(
      * Γ ⊢ (a, b) ⇔ Σ(P : A). B(a)
      */
     term is S.Term.PairOf && match<V.Term.Pair>(type) -> {
-      val first = elaborate(term.first, type?.first?.value)
-      val vFirst = lazy { env.eval(first.term) }
-      val second = elaborate(term.second, type?.second(vFirst))
+      val first = elaborateTerm(term.first, type?.first?.value)
+      val vFirst = lazy { env.evalTerm(first.element) }
+      val second = elaborateTerm(term.second, type?.second(vFirst))
 
       // We need to recreate the type here to store and return the pair type whose second component is applied to the first component of the pair.
-      val type = V.Term.Pair(lazyOf(first.type), Closure(env, next().quote(second.type)))
+      val type = V.Term.Pair(lazyOf(first.type), Closure(env, next().quoteTerm(second.type)))
 
-      resultOf(type) { C.Term.PairOf(first.term, second.term, it) }
+      resultOf(type) { C.Term.PairOf(first.element, second.element, it) }
     }
 
     /**
@@ -215,11 +218,11 @@ fun Ctx.elaborate(
      * Γ ⊢ t.1 ⇒ A
      */
     term is S.Term.First && synth(type)               -> {
-      val pair = elaborate(term.pair, null)
+      val pair = elaborateTerm(term.pair, null)
       when (val pairType = pair.type) {
         is V.Term.Pair -> {
           val type = pairType.first.value
-          resultOf(type) { C.Term.First(pair.term, it) }
+          resultOf(type) { C.Term.First(pair.element, it) }
         }
         else           -> {
           error("expected: pair, actual: $pairType")
@@ -233,14 +236,14 @@ fun Ctx.elaborate(
      * Γ ⊢ t.2 ⇒ B(t.1)
      */
     term is S.Term.Second && synth(type)              -> {
-      val pair = elaborate(term.pair, null)
+      val pair = elaborateTerm(term.pair, null)
       when (val pairType = pair.type) {
         is V.Term.Pair -> {
           // We inject the first projection into the pair to represent the first component of the pair, whatever form the pair is in.
-          val vFirst = lazy { env.eval(C.Term.First(pair.term, next().quote(pairType.first.value))) }
+          val vFirst = lazy { env.evalTerm(C.Term.First(pair.element, next().quoteTerm(pairType.first.value))) }
 
           val type = pairType.second(vFirst)
-          resultOf(type) { C.Term.Second(pair.term, it) }
+          resultOf(type) { C.Term.Second(pair.element, it) }
         }
         else           -> {
           error("expected: pair, actual: $pairType")
@@ -256,10 +259,11 @@ fun Ctx.elaborate(
      * Γ ⊢ let p = a; b ⇔ B
      */
     term is S.Term.Let && match<V.Term>(type)         -> {
-      val init = elaborate(term.init, null)
-      val vInit = lazy { env.eval(init.term) }
-      val body = extend(term.binder, init.type, vInit).elaborate(term.body, type)
-      C.Term.Let(init.term, body.term) of (type ?: body.type)
+      val init = elaborateTerm(term.init, null)
+      val vInit = lazy { env.evalTerm(init.element) }
+      val (ctx, binder) = extend(term.binder, init.type, vInit)
+      val body = ctx.elaborateTerm(term.body, type)
+      C.Term.Let(binder, init.element, body.element) of (type ?: body.type)
     }
 
     /**
@@ -268,7 +272,7 @@ fun Ctx.elaborate(
      */
     term is S.Term.Var && synth(type)                 -> {
       val entry = entries.lastOrNull { it.name == term.name } ?: error("var not found: ${term.name}")
-      val term = next().quote(entry.term)
+      val term = next().quoteTerm(entry.term)
       val type = entry.term.type.value
       term of type
     }
@@ -279,9 +283,9 @@ fun Ctx.elaborate(
      * Γ ⊢ a : A ⇒ A
      */
     term is S.Term.Anno && synth(type)                -> {
-      val type = elaborate(term.type, V.Term.Type)
-      val vType = env.eval(type.term)
-      elaborate(term.target, vType)
+      val type = elaborateTerm(term.type, V.Term.Type)
+      val vType = env.evalTerm(type.element)
+      elaborateTerm(term.target, vType)
     }
 
     /**
@@ -291,7 +295,7 @@ fun Ctx.elaborate(
      * Γ ⊢ t ⇐ B
      */
     check<V.Term>(type)                               -> {
-      val actual = elaborate(term, null)
+      val actual = elaborateTerm(term, null)
       if (next().conv(actual.type, type)) {
         actual
       } else {
@@ -308,40 +312,48 @@ fun Ctx.elaborate(
 /**
  * Extends [this] [Ctx] context with [value] of [type], while desugaring [pattern] to the nested projections.
  */
+@Suppress("NAME_SHADOWING")
 private fun Ctx.extend(
   pattern: S.Pattern,
   type: V.Term,
   value: Lazy<V.Term>,
-): Ctx {
+): Pair<Ctx, C.Pattern> {
   val entries = mutableListOf<Ctx.Entry>()
 
   fun bind(
     pattern: S.Pattern,
     value: V.Term,
-  ) {
+  ): C.Pattern {
     @Suppress("NAME_SHADOWING")
     val type = value.type.value
-    when {
-      pattern is S.Pattern.UnitOf && check<V.Term.Unit>(type) -> {}
+    return when {
+      pattern is S.Pattern.UnitOf && check<V.Term.Unit>(type) -> {
+        C.Pattern.UnitOf
+      }
 
       pattern is S.Pattern.PairOf && check<V.Term.Pair>(type) -> {
-        val first = V.Term.First(value, type.first)
-        bind(pattern.first, first)
-        bind(pattern.second, V.Term.Second(value, lazy { type.second(lazyOf(first)) }))
+        val proj = V.Term.First(value, type.first)
+        val first = bind(pattern.first, proj)
+        val second = bind(pattern.second, V.Term.Second(value, lazy { type.second(lazyOf(proj)) }))
+        C.Pattern.PairOf(first, second)
       }
 
-      pattern is S.Pattern.Var && check<V.Term>(type)         -> {
+      pattern is S.Pattern.Var                                -> {
         entries += Ctx.Entry(pattern.name, value)
+        C.Pattern.Var(pattern.name)
       }
 
-      pattern is S.Pattern.Drop                               -> {}
+      pattern is S.Pattern.Drop                               -> {
+        C.Pattern.Drop
+      }
 
       else                                                    -> {
         TODO()
       }
     }
   }
-  bind(pattern, V.Term.Var(next(), lazyOf(type)))
 
-  return Ctx(this.entries + entries, env + value)
+  val pattern = bind(pattern, V.Term.Var(next(), lazyOf(type)))
+
+  return Ctx(this.entries + entries, env + value) to pattern
 }

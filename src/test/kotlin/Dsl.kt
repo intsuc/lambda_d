@@ -1,181 +1,198 @@
-import Core as C
-import Surface as S
-
-val TypeS: S.Term = S.Term.Type
+val TypeS: Surface.Term = Surface.Term.Type
 
 fun Π(
-  param: S.Term,
-  result: S.Term,
-): S.Term {
-  return S.Term.Func(S.Pattern.Drop, param, result)
+  param: Surface.Term,
+  result: Surface.Term,
+): Surface.Term {
+  return Surface.Term.Func(Surface.Pattern.Drop, param, result)
 }
 
 fun Π(
-  binder: S.Pattern,
-  param: S.Term,
-  result: S.Term,
-): S.Term {
-  return S.Term.Func(binder, param, result)
+  binder: Surface.Pattern,
+  param: Surface.Term,
+  result: Surface.Term,
+): Surface.Term {
+  return Surface.Term.Func(binder, param, result)
 }
 
 fun λ(
-  body: S.Term,
-): S.Term {
-  return S.Term.FuncOf(S.Pattern.Drop, body)
+  body: Surface.Term,
+): Surface.Term {
+  return Surface.Term.FuncOf(Surface.Pattern.Drop, body)
 }
 
 fun λ(
-  binder: S.Pattern,
-  body: S.Term,
-): S.Term {
-  return S.Term.FuncOf(binder, body)
+  binder: Surface.Pattern,
+  body: Surface.Term,
+): Surface.Term {
+  return Surface.Term.FuncOf(binder, body)
 }
 
-operator fun S.Term.invoke(
-  arg: S.Term,
-): S.Term {
-  return S.Term.Apply(this, arg)
+operator fun Surface.Term.invoke(
+  arg: Surface.Term,
+): Surface.Term {
+  return Surface.Term.Apply(this, arg)
 }
 
 @JvmField
-val UnitS: S.Term = S.Term.Unit
+val UnitS: Surface.Term = Surface.Term.Unit
 
 @JvmField
-val unitS: S.Term = S.Term.UnitOf
+val unitS: Surface.Term = Surface.Term.UnitOf
 
 fun Σ(
-  param: S.Term,
-  result: S.Term,
-): S.Term {
-  return S.Term.Pair(S.Pattern.Drop, param, result)
+  param: Surface.Term,
+  result: Surface.Term,
+): Surface.Term {
+  return Surface.Term.Pair(Surface.Pattern.Drop, param, result)
 }
 
 fun Σ(
-  binder: S.Pattern,
-  param: S.Term,
-  result: S.Term,
-): S.Term {
-  return S.Term.Pair(binder, param, result)
+  binder: Surface.Pattern,
+  param: Surface.Term,
+  result: Surface.Term,
+): Surface.Term {
+  return Surface.Term.Pair(binder, param, result)
 }
 
-infix fun S.Term.to(
-  second: S.Term,
-): S.Term {
-  return S.Term.PairOf(this, second)
+infix fun Surface.Term.to(
+  second: Surface.Term,
+): Surface.Term {
+  return Surface.Term.PairOf(this, second)
 }
 
-val S.Term.first: S.Term
+val Surface.Term.first: Surface.Term
   get() {
-    return S.Term.First(this)
+    return Surface.Term.First(this)
   }
 
-val S.Term.second: S.Term
+val Surface.Term.second: Surface.Term
   get() {
-    return S.Term.Second(this)
+    return Surface.Term.Second(this)
   }
 
 fun let(
-  init: S.Term,
-  body: S.Term,
-): S.Term {
-  return S.Term.Let(S.Pattern.Drop, init, body)
+  init: Surface.Term,
+  body: Surface.Term,
+): Surface.Term {
+  return Surface.Term.Let(Surface.Pattern.Drop, init, body)
 }
 
 fun let(
-  binder: S.Pattern,
-  init: S.Term,
-  body: S.Term,
-): S.Term {
-  return S.Term.Let(binder, init, body)
+  binder: Surface.Pattern,
+  init: Surface.Term,
+  body: Surface.Term,
+): Surface.Term {
+  return Surface.Term.Let(binder, init, body)
 }
 
-operator fun String.unaryPlus(): S.Term {
-  return S.Term.Var(this)
+operator fun String.unaryPlus(): Surface.Term {
+  return Surface.Term.Var(this)
 }
 
-infix fun S.Term.of(
-  type: S.Term,
-): S.Term {
-  return S.Term.Anno(this, type)
+infix fun Surface.Term.of(
+  type: Surface.Term,
+): Surface.Term {
+  return Surface.Term.Anno(this, type)
 }
 
-infix fun S.Pattern.to(
-  second: S.Pattern,
-): S.Pattern {
-  return S.Pattern.PairOf(this, second)
+infix fun Surface.Pattern.to(
+  second: Surface.Pattern,
+): Surface.Pattern {
+  return Surface.Pattern.PairOf(this, second)
 }
 
-operator fun String.unaryMinus(): S.Pattern {
-  return S.Pattern.Var(this)
+operator fun String.unaryMinus(): Surface.Pattern {
+  return Surface.Pattern.Var(this)
 }
 
-val _p: S.Pattern = S.Pattern.Drop
+val _p: Surface.Pattern = Surface.Pattern.Drop
 
-val TypeC: C.Term = C.Term.Type
+val TypeC: Core.Term = Core.Term.Type
 
 fun Π(
-  param: C.Term,
-  result: C.Term,
-): C.Term {
-  return C.Term.Func(param, result)
+  param: Core.Term,
+  result: Core.Term,
+): Core.Term {
+  return Core.Term.Func(param, result)
 }
 
 fun λ(
-  body: C.Term,
-  of: C.Term,
-): C.Term {
-  return C.Term.FuncOf(body, of)
+  binder: Core.Pattern,
+  body: Core.Term,
+  of: Core.Term,
+): Core.Term {
+  return Core.Term.FuncOf(binder, body, of)
 }
 
-operator fun C.Term.invoke(
-  arg: C.Term,
-  of: C.Term,
-): C.Term {
-  return C.Term.Apply(this, arg, of)
+operator fun Core.Term.invoke(
+  arg: Core.Term,
+  of: Core.Term,
+): Core.Term {
+  return Core.Term.Apply(this, arg, of)
 }
 
 @JvmField
-val UnitC: C.Term = C.Term.Unit
+val UnitC: Core.Term = Core.Term.Unit
 
 @JvmField
-val unitC: C.Term = C.Term.UnitOf
+val unitC: Core.Term = Core.Term.UnitOf
 
 fun Σ(
-  param: C.Term,
-  result: C.Term,
-): C.Term {
-  return C.Term.Pair(param, result)
+  param: Core.Term,
+  result: Core.Term,
+): Core.Term {
+  return Core.Term.Pair(param, result)
 }
 
-fun C.Term.to(
-  second: C.Term,
-  of: C.Term,
-): C.Term {
-  return C.Term.PairOf(this, second, of)
+fun Core.Term.to(
+  second: Core.Term,
+  of: Core.Term,
+): Core.Term {
+  return Core.Term.PairOf(this, second, of)
 }
 
-fun C.Term.first(
-  of: C.Term,
-): C.Term {
-  return C.Term.First(this, of)
+fun Core.Term.first(
+  of: Core.Term,
+): Core.Term {
+  return Core.Term.First(this, of)
 }
 
-fun C.Term.second(
-  of: C.Term,
-): C.Term {
-  return C.Term.Second(this, of)
+fun Core.Term.second(
+  of: Core.Term,
+): Core.Term {
+  return Core.Term.Second(this, of)
 }
 
 fun let(
-  init: C.Term,
-  body: C.Term,
-): C.Term {
-  return C.Term.Let(init, body)
+  binder: Core.Pattern,
+  init: Core.Term,
+  body: Core.Term,
+): Core.Term {
+  return Core.Term.Let(binder, init, body)
 }
 
 fun v(
   index: Int,
-  of: C.Term,
-): C.Term {
-  return C.Term.Var(Index(index), of)
+  of: Core.Term,
+): Core.Term {
+  return Core.Term.Var(Idx(index), of)
+}
+
+val unitCp: Core.Pattern = Core.Pattern.UnitOf
+
+fun Core.Pattern.to(
+  second: Core.Pattern,
+): Core.Pattern {
+  return Core.Pattern.PairOf(this, second)
+}
+
+fun vp(
+  name: String,
+): Core.Pattern {
+  return Core.Pattern.Var(name)
+}
+
+fun _p(): Core.Pattern {
+  return Core.Pattern.Drop
 }

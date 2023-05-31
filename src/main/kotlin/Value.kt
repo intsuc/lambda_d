@@ -9,7 +9,7 @@ sealed class Value {
    */
   sealed class Term {
     /**
-     * The type of this term, and is used to restore the type information on [quote] this term.
+     * The type of this term, and is used to restore the type information on [quoteTerm] this term.
      */
     abstract val type: Lazy<Term>
 
@@ -26,6 +26,7 @@ sealed class Value {
     }
 
     data class FuncOf(
+      val binder: C.Pattern,
       val body: Closure,
       override val type: Lazy<Term>,
     ) : Term()
@@ -69,7 +70,7 @@ sealed class Value {
     ) : Term()
 
     data class Var(
-      val level: Level,
+      val level: Lvl,
       override val type: Lazy<Term>,
     ) : Term()
   }

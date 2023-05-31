@@ -8,8 +8,8 @@ object ElaborateTest {
     term: C.Term?,
     text: String,
   ) {
-    val result = emptyCtx().elaborate(Parse(text), null)
-    term?.let { assertEquals(it, result.term) }
+    val result = emptyCtx().elaborateTerm(Parse(text), null)
+    term?.let { assertEquals(it, result.element) }
   }
 
   @Test
@@ -70,7 +70,7 @@ object ElaborateTest {
   @Test
   fun idUncurryPattern() {
     test(
-      Programs.idUncurry,
+      Programs.idUncurryPattern,
       """
         let id = (λ(_, a). a : Π((A, _) : Σ(A : Type). A). A);
         id (Unit, ())

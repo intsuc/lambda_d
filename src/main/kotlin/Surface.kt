@@ -63,7 +63,7 @@ sealed class Surface {
 
   /**
    * A raw pattern.
-   * Desugared to nested projections.
+   * May or may not be well-formed.
    */
   sealed class Pattern {
     data object UnitOf : Pattern()

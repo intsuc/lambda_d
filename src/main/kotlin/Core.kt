@@ -15,6 +15,7 @@ sealed class Core {
     }
 
     data class Func(
+      // Omit binder because it is runtime-irrelevant.
       val param: Term,
       val result: Term,
     ) : Term() {
@@ -22,6 +23,7 @@ sealed class Core {
     }
 
     data class FuncOf(
+      val binder: Pattern,
       val body: Term,
       override val type: Term,
     ) : Term()
@@ -41,6 +43,7 @@ sealed class Core {
     }
 
     data class Pair(
+      // Omit binder because it is runtime-irrelevant.
       val first: Term,
       val second: Term,
     ) : Term() {
@@ -64,16 +67,41 @@ sealed class Core {
     ) : Term()
 
     data class Let(
+      val binder: Pattern,
       val init: Term,
       val body: Term,
     ) : Term() {
-      // Store the type of the body to avoid cascading field accesses
+      // Store the type to avoid cascading field accesses
       override val type: Term = body.type
     }
 
     data class Var(
-      val index: Index,
+      val index: Idx,
       override val type: Term,
     ) : Term()
+  }
+
+  /**
+   * An elaborated pattern.
+   * Must be well-typed.
+   */
+  sealed class Pattern {
+    /**
+     * The type of this pattern, and can be used in subsequent compilation passes.
+     */
+    // abstract val type: Term
+
+    data object UnitOf : Pattern()
+
+    data class PairOf(
+      val first: Pattern,
+      val second: Pattern,
+    ) : Pattern()
+
+    data class Var(
+      val name: String,
+    ) : Pattern()
+
+    data object Drop : Pattern()
   }
 }
